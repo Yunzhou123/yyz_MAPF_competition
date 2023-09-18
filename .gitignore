@@ -1,0 +1,7 @@
+build
+.vscode
+Dockerfile
+local
+
+# Project exclude paths
+/cmake-build-debug/
