@@ -1,6 +1,6 @@
 #include <MAPFPlanner.h>
 #include <random>
-
+#include <algorithm>
 
 struct AstarNode
 {
@@ -26,70 +26,180 @@ struct cmp
     }
 };
 int a=1+1;
+template<typename T> std::vector<int> argsort(const std::vector<T>& array)
+{
+    const int array_len(array.size());
+    std::vector<int> array_index(array_len, 0);
+    for (int i = 0; i < array_len; ++i)
+        array_index[i] = i;
+
+    std::sort(array_index.begin(), array_index.end(),
+              [&array](int pos1, int pos2) {return (array[pos1] < array[pos2]); });
+
+    return array_index;
+}
 void MAPFPlanner::initialize(int preprocess_time_limit)
 {
-    cout << env->map.size() << endl;
-    int map_height=env->rows;
-    int map_width=env->cols;
-    int map_arr[map_height][map_width]; //0 means traversable, 1 means not traversable
-    int vectorIndex = 0;
-    for (int i = 0; i < map_height; ++i) {
-        for (int j = 0; j < map_width; ++j) {
-            map_arr[i][j] = env->map[vectorIndex++];
-        }
+    MAPFPlanner::map=env->map;
+    //Initialize a priority order
+    int new_order[env->num_of_agents];
+    int new_agent_path_index[env->num_of_agents];
+    for (int i = 0; i < env->num_of_agents; ++i) {
+        new_order[i] = i;
+        new_agent_path_index[i] = 0;
     }
+    std::shuffle(&new_order[0],&new_order[env->num_of_agents], std::mt19937(std::random_device()()));
+    //for (int i = 0; i < env->num_of_agents; ++i) {
+        //cout<<new_order[i]<<endl;
+    //}
+    MAPFPlanner::priority_order=new_order;
+    MAPFPlanner::agent_path_index=new_agent_path_index;
+    MAPFPlanner::RHCR_w=20;
+    MAPFPlanner::RHCR_h=15;
+    MAPFPlanner::agents_path=new list<pair<int,int>>[env->num_of_agents];
+    MAPFPlanner::safe_intervals=new list<pair<int,int>>[env->rows*env->cols];
+    for (int i = 0; i < env->num_of_agents; ++i) {
+    cout<<priority_order[i]<<endl;
+    }
+    for (int i = 0; i < env->rows*env->cols; ++i) {
+        pair<int, int> initial_interval;
+        initial_interval.first=0;
+        initial_interval.second=10000;
+        safe_intervals[i].push_back(initial_interval);
+    }
+    cout << env->map.size() << endl;
+    //int map_height=env->rows;
+    //int map_width=env->cols;
+    //int map_arr[map_height][map_width]; //0 means traversable, 1 means not traversable
+    //int vectorIndex = 0;
+    //for (int i = 0; i < map_height; ++i) {
+        //for (int j = 0; j < map_width; ++j) {
+            //map_arr[i][j] = env->map[vectorIndex++];
+        //}
+    //}
     cout << "planner initialize done" << endl;
 
 }
-void MAPFPlanner::map_index_to_vec_index(int map_h, int map_w,int* vec_index)
+void MAPFPlanner::map_index_to_vec_index(int map_h, int map_w,int& vec_index)
 {
-    *vec_index=map_h*env->cols+map_w;
+    vec_index=map_h*env->cols+map_w;
 }
-void MAPFPlanner::vec_index_to_map_index(int* map_h, int* map_w,int vec_index)
+void MAPFPlanner::vec_index_to_map_index(int& map_h, int& map_w,int vec_index)
 {
-    *map_h=int(vec_index/env->cols);
-    *map_w=vec_index-*map_h*env->cols;
+    map_h=int(vec_index/env->cols);
+    map_w=vec_index-map_h*env->cols;
+}
+bool MAPFPlanner::decide_when_to_plan(int current_timestep,int RHCR_h){
+bool flag= false;
+float residue=current_timestep-RHCR_h*int(current_timestep/RHCR_h);
+if (residue==0){
+    flag= true;
+}
+else{
+    flag= false;
+}
+return flag;
 }
 // plan using simple A* that ignores the time dimension
 void MAPFPlanner::plan(int time_limit,vector<Action> & actions) 
 {
-    actions = std::vector<Action>(env->curr_states.size(), Action::W);
-    cout<<env->num_of_agents<<endl;
-    for (int i = 0; i < env->num_of_agents; i++)
-    {
-        list<pair<int,int>> path;
-        if (env->goal_locations[i].empty()) 
-        {
-            path.push_back({env->curr_states[i].location, env->curr_states[i].orientation});
-        } 
-        else 
-        {
-            path = single_agent_plan(env->curr_states[i].location,
-                                    env->curr_states[i].orientation,
-                                    env->goal_locations[i].front().first);
-        }
-        if (path.front().first != env->curr_states[i].location)
-        {
-            actions[i] = Action::FW; //forward action
-        } 
-        else if (path.front().second!= env->curr_states[i].orientation)
-        {
-            int incr = path.front().second - env->curr_states[i].orientation;
-            if (incr == 1 || incr == -3)
-            {
-                actions[i] = Action::CR; //C--counter clockwise rotate
-            } 
-            else if (incr == -1 || incr == 3)
-            {
-                actions[i] = Action::CCR; //CCR--clockwise rotate
-            } 
-        }
 
+    int current_time=env->curr_timestep;
+    bool flag= decide_when_to_plan(current_time,RHCR_h);
+    cout<<flag<<endl;
+    actions = std::vector<Action>(env->curr_states.size(), Action::W);
+    if (flag==true){
+        //cout<<env->num_of_agents<<endl;
+        //for (int i = 0; i < env->num_of_agents; ++i) {
+        //cout<<priority_order[i]<<endl;
+        //}
+        std::vector<int> vec_data;
+        for (int i = 0; i < env->num_of_agents; ++i)
+            vec_data.push_back(priority_order[i]);
+        MAPFPlanner::index = argsort(vec_data);
+        //for (int item : index)
+            //std::cout << item << endl;
+        //for (int i = 0; i < env->num_of_agents; ++i) {
+        //cout<<MAPFPlanner::priority_order[i]<<endl;
+        //}
+        for (int i = 0; i < env->num_of_agents; i++)
+        {
+            int current_agent=index[i];
+            int current_orientation=env->curr_states[current_agent].orientation;
+            int current_position=env->curr_states[current_agent].location;
+            int goal_location=env->goal_locations[current_agent].front().first;
+            int current_map_h=-1;
+            int current_map_w=-1;
+            vec_index_to_map_index(current_map_h,current_map_w,current_position);
+            //cout<<env->curr_states[current_agent]<<endl;
+            list<pair<int,int>> path;
+            agent_path_index[current_agent]=agent_path_index[current_agent]+1;
+            if (env->goal_locations[current_agent].empty())
+            {
+                //path.push_back({env->curr_states[i].location, env->curr_states[i].orientation});
+                agents_path[current_agent].push_back({env->curr_states[current_agent].location, env->curr_states[current_agent].orientation});
+            }
+            else
+            {
+                path = single_agent_plan(env->curr_states[current_agent].location,
+                                         env->curr_states[current_agent].orientation,
+                                         env->goal_locations[current_agent].front().first);
+                agents_path[current_agent]=path;
+            }
+            if (path.front().first != env->curr_states[current_agent].location)
+            {
+                actions[current_agent] = Action::FW; //forward action
+            }
+            else if (path.front().second!= env->curr_states[current_agent].orientation)
+            {
+                int incr = path.front().second - env->curr_states[current_agent].orientation;
+                if (incr == 1 || incr == -3)
+                {
+                    actions[current_agent] = Action::CR; //C--counter clockwise rotate
+                }
+                else if (incr == -1 || incr == 3)
+                {
+                    actions[current_agent] = Action::CCR; //CCR--clockwise rotate
+                }
+            }
+            agents_path[current_agent].pop_front();
+            cout<<env->curr_states[current_agent].location<<endl;
+            cout<<env->curr_states[current_agent].orientation<<endl;
+
+        }
+    }
+    else{
+        for (int i = 0; i < env->num_of_agents; i++){
+            int current_agent=index[i];
+            //cout<<agents_path[current_agent].size()<<endl;
+            if (agents_path[current_agent].size()==0){
+                agents_path[current_agent].push_back({env->curr_states[current_agent].location, env->curr_states[current_agent].orientation});
+            }
+            cout<<agents_path[current_agent].front().first<<endl;
+            cout<<env->curr_states[current_agent].location<<endl;
+            cout<<env->curr_states[current_agent].orientation<<endl;
+            if (agents_path[current_agent].front().first != env->curr_states[current_agent].location)
+            {
+                actions[current_agent] = Action::FW; //forward action
+            }
+            else if (agents_path[current_agent].front().second!= env->curr_states[current_agent].orientation)
+            {
+                int incr = agents_path[current_agent].front().second - env->curr_states[current_agent].orientation;
+                if (incr == 1 || incr == -3)
+                {
+                    actions[current_agent] = Action::CR; //C--counter clockwise rotate
+                }
+                else if (incr == -1 || incr == 3)
+                {
+                    actions[current_agent] = Action::CCR; //CCR--clockwise rotate
+                }
+            }
+            agents_path[current_agent].pop_front();
+
+        }
     }
   return;
 }
-
-
 list<pair<int,int>> MAPFPlanner::single_agent_plan(int start,int start_direct,int end)
 {
     list<pair<int,int>> path;
@@ -109,6 +219,9 @@ list<pair<int,int>> MAPFPlanner::single_agent_plan(int start,int start_direct,in
         {
             while(curr->parent!=NULL) 
             {
+                if (env->map[curr->location]==1){
+                    cout<<"something is wrong !"<<endl;
+                }
                 path.emplace_front(make_pair(curr->location, curr->direction));
                 curr = curr->parent;
             }
