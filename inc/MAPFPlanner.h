@@ -21,7 +21,7 @@ public:
 
     // Start kit dummy implementation
     std::list<pair<int,int>>single_agent_plan_yyz(int start,int start_direct, int end);
-    std::list<pair<int,int>>single_agent_plan(int start,int start_direct, int end);
+    std::vector<pair<int,int>>single_agent_plan(int start,int start_direct, int end);
     int getManhattanDistance(int loc1, int loc2);
     std::list<pair<int,int>> getNeighbors(int location, int direction);
     bool validateMove(int loc,int loc2);
@@ -35,8 +35,10 @@ public:
     int RHCR_w; //The time interval that we want to resolve collisions
     int RHCR_h; //planning interval
     bool decide_when_to_plan(int current_timestep, int RGCR_h);
-    list<pair<int,int>>* agents_path;
-    list<pair<int,int>>* safe_intervals;
+    vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval);
+    pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time);
+    vector<pair<int,int>>* agents_path;
+    vector<pair<int,int>>* safe_intervals;
     std::vector<int> map;
     std::vector<int> index;
 };

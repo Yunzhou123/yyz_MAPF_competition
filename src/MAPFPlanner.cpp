@@ -15,7 +15,12 @@ struct AstarNode
     AstarNode(int _location,int _direction, int _g, int _h, int _t, AstarNode* _parent):
         location(_location), direction(_direction),f(_g+_h),g(_g),h(_h),t(_t),parent(_parent) {}
 };
-
+struct SIPPNode {
+    int arrive_time;
+    pair<int,int> safe_interval;
+    int f,g,h;
+    SIPPNode* parent;
+};
 
 struct cmp
 {
@@ -38,6 +43,42 @@ template<typename T> std::vector<int> argsort(const std::vector<T>& array)
 
     return array_index;
 }
+pair<int,int> MAPFPlanner::compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time){
+    int intervals_num=current_safe_intervals.size();
+    int low_index=0;
+    int high_index=intervals_num-1;
+    int check_index=int((low_index+high_index)/2);
+    bool flag= false;
+    pair<int,int> rtn_interval=make_pair(0,0);
+    while (flag== false){
+        if ((current_time<=current_safe_intervals[check_index].second) and (current_time>=current_safe_intervals[check_index].first)){
+            rtn_interval=current_safe_intervals[check_index];
+            flag= true;
+        }
+        else{
+            if (high_index==low_index+1){
+                if (current_time>current_safe_intervals[check_index].second){
+                    check_index=high_index;
+                    low_index=high_index;
+                }
+                else{
+                    check_index=low_index;
+                    high_index=low_index;
+                }
+            }
+            else {
+                if (current_time>current_safe_intervals[check_index].second){
+                    low_index=high_index;
+                }
+                else{
+                    check_index=low_index;
+                }
+                check_index=int((low_index+high_index)/2);
+            }
+        }
+    }
+    return rtn_interval;
+}
 void MAPFPlanner::initialize(int preprocess_time_limit)
 {
     MAPFPlanner::map=env->map;
@@ -56,15 +97,15 @@ void MAPFPlanner::initialize(int preprocess_time_limit)
     MAPFPlanner::agent_path_index=new_agent_path_index;
     MAPFPlanner::RHCR_w=20;
     MAPFPlanner::RHCR_h=15;
-    MAPFPlanner::agents_path=new list<pair<int,int>>[env->num_of_agents];
-    MAPFPlanner::safe_intervals=new list<pair<int,int>>[env->rows*env->cols];
+    MAPFPlanner::agents_path=new vector<pair<int,int>>[env->num_of_agents];
+    MAPFPlanner::safe_intervals=new vector<pair<int,int>>[env->rows*env->cols];
     for (int i = 0; i < env->num_of_agents; ++i) {
     cout<<priority_order[i]<<endl;
     }
     for (int i = 0; i < env->rows*env->cols; ++i) {
         pair<int, int> initial_interval;
         initial_interval.first=0;
-        initial_interval.second=10000;
+        initial_interval.second=100000;
         safe_intervals[i].push_back(initial_interval);
     }
     cout << env->map.size() << endl;
@@ -129,10 +170,11 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
             int current_position=env->curr_states[current_agent].location;
             int goal_location=env->goal_locations[current_agent].front().first;
             int current_map_h=-1;
-            int current_map_w=-1;
+            int current_map_w=-1;            cout<<env->curr_states[current_agent].location<<endl;
+            cout<<env->curr_states[current_agent].orientation<<endl;
             vec_index_to_map_index(current_map_h,current_map_w,current_position);
             //cout<<env->curr_states[current_agent]<<endl;
-            list<pair<int,int>> path;
+            vector<pair<int,int>> path;
             agent_path_index[current_agent]=agent_path_index[current_agent]+1;
             if (env->goal_locations[current_agent].empty())
             {
@@ -144,6 +186,9 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
                 path = single_agent_plan(env->curr_states[current_agent].location,
                                          env->curr_states[current_agent].orientation,
                                          env->goal_locations[current_agent].front().first);
+                single_agent_plan_SIPP(env->curr_states[current_agent].location,
+                                       env->curr_states[current_agent].orientation,
+                                       env->goal_locations[current_agent].front().first,safe_intervals);
                 agents_path[current_agent]=path;
             }
             if (path.front().first != env->curr_states[current_agent].location)
@@ -162,9 +207,7 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
                     actions[current_agent] = Action::CCR; //CCR--clockwise rotate
                 }
             }
-            agents_path[current_agent].pop_front();
-            cout<<env->curr_states[current_agent].location<<endl;
-            cout<<env->curr_states[current_agent].orientation<<endl;
+            agents_path[current_agent].erase(agents_path[current_agent].begin());
 
         }
     }
@@ -175,9 +218,9 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
             if (agents_path[current_agent].size()==0){
                 agents_path[current_agent].push_back({env->curr_states[current_agent].location, env->curr_states[current_agent].orientation});
             }
-            cout<<agents_path[current_agent].front().first<<endl;
-            cout<<env->curr_states[current_agent].location<<endl;
-            cout<<env->curr_states[current_agent].orientation<<endl;
+            //cout<<agents_path[current_agent].front().first<<endl;
+            //cout<<env->curr_states[current_agent].location<<endl;
+            //cout<<env->curr_states[current_agent].orientation<<endl;
             if (agents_path[current_agent].front().first != env->curr_states[current_agent].location)
             {
                 actions[current_agent] = Action::FW; //forward action
@@ -194,15 +237,26 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
                     actions[current_agent] = Action::CCR; //CCR--clockwise rotate
                 }
             }
-            agents_path[current_agent].pop_front();
+            agents_path[current_agent].erase(agents_path[current_agent].begin());
 
         }
     }
   return;
 }
-list<pair<int,int>> MAPFPlanner::single_agent_plan(int start,int start_direct,int end)
+vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_direct, int end,vector<pair<int,int>>* safe_intervals) {
+    int start_time=env->curr_timestep;
+    vector<pair<int,int>> path;
+    vector<pair<int,int>> current_interval=safe_intervals[start];
+    pair<int,int> current_safe_interval= compute_current_interval(current_interval,start_time);
+    cout<<"["<<current_safe_interval.first<<","<<current_safe_interval.second<<"]"<<endl;
+    for (int i=0;i<current_interval.size();i++) {
+        cout<<"["<<current_interval.front().first<<","<<current_interval.front().second<<"]"<<endl;
+    }
+    return path;
+}
+vector<pair<int,int>> MAPFPlanner::single_agent_plan(int start,int start_direct,int end)
 {
-    list<pair<int,int>> path;
+    vector<pair<int,int>> path;
     priority_queue<AstarNode*,vector<AstarNode*>,cmp> open_list;
     unordered_map<int,AstarNode*> all_nodes;
     unordered_set<int> close_list;
@@ -222,7 +276,7 @@ list<pair<int,int>> MAPFPlanner::single_agent_plan(int start,int start_direct,in
                 if (env->map[curr->location]==1){
                     cout<<"something is wrong !"<<endl;
                 }
-                path.emplace_front(make_pair(curr->location, curr->direction));
+                path.insert(path.begin(),make_pair(curr->location, curr->direction));
                 curr = curr->parent;
             }
             break;
