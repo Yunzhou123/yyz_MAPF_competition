@@ -3,7 +3,16 @@
 #include "SharedEnv.h"
 #include "ActionModel.h"
 
-
+struct SIPPNode {
+    int arrive_time;
+    int arrive_dir;
+    pair<int,int> safe_interval;
+    int location;
+    int f,g,h;
+    SIPPNode* parent;
+    SIPPNode(int _arrive_time,pair<int,int> _safe_interval,int _f, int _g, int _h, SIPPNode* _parent,int _location,int _arrive_dir):
+            arrive_time(_arrive_time),safe_interval(_safe_interval),f(_f),g(_g),h(_h),parent(_parent),location(_location),arrive_dir(_arrive_dir) {} ;
+};
 class MAPFPlanner
 {
 public:
@@ -39,6 +48,11 @@ public:
     pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time);
     vector<pair<int,int>>* agents_path;
     vector<pair<int,int>>* safe_intervals;
+    vector<pair<int,int>>* last_move_pos;
     std::vector<int> map;
     std::vector<int> index;
+
+    vector<SIPPNode> SIPP_get_neighbor(SIPPNode sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end);
+
 };
+
