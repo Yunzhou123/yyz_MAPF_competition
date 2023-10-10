@@ -261,31 +261,30 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
     }
   return;
 }
-vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end){
+vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end){
     map=env->map;
-    int move_time=sipp_node.safe_interval.second-sipp_node.arrive_time;
+    int move_time=sipp_node->safe_interval.second-sipp_node->arrive_time;
     int maximum_rot_time=move_time-1;
-    int location=sipp_node.location;
+    int location=sipp_node->location;
     int candidates[4] = { location + 1,location + env->cols, location - 1, location - env->cols};
     int minimum_rot_step[4]={0,0,0,0};
     vector<SIPPNode*> SIPPNode_list;
     vector<SIPPNode> SIPPNode_list_object;
-    vector<pair<int,int>> last_move_positions=last_move_pos[sipp_node.location];
-    pair<int,int> current_last_move=last_move_positions[0];
-    //cout<<"Get neighborhoods"<<endl;
-    //cout<<"neighborhood starts"<<endl;
+    SIPPNode* parent_node=sipp_node;
+    SIPPNode parent_object=*parent_node;
+    cout<<parent_node->location<<endl;
     for (int i=0;i<4;i++){
-        //cout<<i<<endl;
+        cout<<parent_node->location<<endl;
         int check_candidate=candidates[i];
-        if (sipp_node.arrive_dir==i){
+        if (sipp_node->arrive_dir==i){
             minimum_rot_step[i]=0;
         }
         else{
-            if (abs(sipp_node.arrive_dir-i)>4-abs(i-sipp_node.arrive_dir)){
-                minimum_rot_step[i]=4-abs(i-sipp_node.arrive_dir);
+            if (abs(sipp_node->arrive_dir-i)>4-abs(i-sipp_node->arrive_dir)){
+                minimum_rot_step[i]=4-abs(i-sipp_node->arrive_dir);
             }
             else{
-                minimum_rot_step[i]=abs(sipp_node.arrive_dir-i);
+                minimum_rot_step[i]=abs(sipp_node->arrive_dir-i);
             }
         }
         if (check_candidate<0 or check_candidate>=env->map.size()){
@@ -295,13 +294,15 @@ vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode sipp_node,vector<pair<i
             continue;
         }
         //cout<<minimum_rot_step[i]<<endl;
-        int minimum_leave_time=sipp_node.arrive_time+minimum_rot_step[i];
+        int minimum_leave_time=sipp_node->arrive_time+minimum_rot_step[i];
+        cout<<parent_object.location<<endl;
         vector<pair<int,int>> candidate_intervals=safe_intervals[check_candidate];
 
         int intervals_num=candidate_intervals.size();
+        cout<<parent_node->location<<endl;
         //cout<<"phase 1"<<endl;
         for (int j=0;j<intervals_num;j++){
-            int maximum_leave_time=sipp_node.safe_interval.second;
+            int maximum_leave_time=sipp_node->safe_interval.second;
             pair<int,int> current_interval=candidate_intervals[j];
             if (current_interval.first>maximum_leave_time+1){
                 continue;
@@ -310,26 +311,15 @@ vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode sipp_node,vector<pair<i
                 continue;
             }
             int t= max(minimum_leave_time+1,current_interval.first);
-            //cout<<"phase 2"<<endl;
-            //cout<<"t: "<<t<<endl;
-            //cout<<check_candidate<<endl;
-            //cout<<map.size()<<endl;
+
             SIPPNode new_node=SIPPNode(t, current_interval, t+getManhattanDistance(check_candidate, end), t, getManhattanDistance(check_candidate, end),
-                                           &sipp_node,check_candidate,i) ;
-            SIPPNode_list.push_back(&new_node);
+                                       nullptr,check_candidate,i);
+            cout<<parent_node->location<<endl;
             SIPPNode_list_object.push_back(new_node);
-            //cout<<"phase 3"<<endl;
-            //cout<<new_node.arrive_time<<endl;
+            //SIPPNode_list.push_back(&new_node);
+            cout<<parent_node->location<<endl;
         }
     }
-    //for (int i=0;i<SIPPNode_list_object.size();i++){
-        //cout<<SIPPNode_list_object[i].f<<endl;
-        //cout<<SIPPNode_list_object[i].g<<endl;
-       // cout<<SIPPNode_list_object[i].h<<endl;
-    //}
-    //cout<<SIPPNode_list.size()<<endl;
-    //cout<<"End getting neighborhoods"<<endl;
-    //cout<<"neighborhood ends"<<endl;
     return SIPPNode_list_object;
 }
 
@@ -340,6 +330,8 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
     pair<int,int> current_safe_interval= compute_current_interval(current_interval,start_time);
     int maximum_timestep=100000;
     priority_queue<SIPPNode,vector<SIPPNode>,SIPP_cmp> open_list;
+    vector<SIPPNode*> current_reference_list;
+    vector<SIPPNode> SIPP_node_list_copy;
     unordered_map<int,SIPPNode*> all_nodes;
     unordered_set<int> close_list;
     SIPPNode initial_node=SIPPNode(0, current_safe_interval, getManhattanDistance(start, end), 0, getManhattanDistance(start, end),
@@ -355,7 +347,10 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
         if (terminate_flag== true){
             break;
         }
-        SIPPNode curr = open_list.top();
+        SIPPNode curr_node = open_list.top();
+        SIPPNode* curr=&curr_node;
+        current_reference_list.push_back(curr);
+        open_list.pop();
         //curr.arrive_time=curr.g;
         //cout<<"f: "<<curr.f<<endl;
         //cout<<"g: "<<curr.g<<endl;
@@ -363,47 +358,142 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
         //cout<<"location: "<<curr.location<<endl;
         //cout<<start<<endl;
         //cout<<curr->location<<endl;
-        open_list.pop();
+
         //cout<<curr->arrive_time<<endl;
         //cout<<curr->location<<endl;
         //printf("%d\n",curr->h);
         //cout<<open_list.size()<<endl;
         //cout<<open_list.size()<<endl;
-        if (curr.location==end){
+        if (curr->location==end){
             terminate_flag= true;
-            current_node=&curr;
-            cout<<"location: "<<(curr).location<<endl;
-            cout<<"location: "<<(*curr.parent).location<<endl;
-            cout<<"location: "<<curr.parent->location<<endl;
+            //cout<<end<<endl;
+
+            //cout<<current_reference_list.size()<<endl;
+            //for (int k=0;k<SIPP_node_list_copy.size();k++){
+                //cout<<SIPP_node_list_copy[k].location<<endl;
+            //}
+            int count=0;
+            cout<<"location: "<<(curr)->location<<endl;
+            cout<<"Arrive time: "<<(curr)->arrive_time<<endl;
+            cout<<count<<endl;
+            while (curr->parent!= nullptr){
+                curr=curr->parent;
+                cout<<"location: "<<(curr)->location<<endl;
+                cout<<"Arrive time: "<<(curr)->arrive_time<<endl;
+                count=count+1;
+                cout<<count<<endl;
+            }
+
+            //cout<<curr->parent->parent->location<<endl;
+            //cout<<"location: "<<curr->parent->location<<endl;
+            //cout<<"location: "<<curr->parent->arrive_time<<endl;
+            //cout<<"location: "<<curr->parent->parent->location<<endl;
+            //cout<b<"location: "<<curr->parent->parent->arrive_time<<endl;
+            current_node=curr;
             break;
         }
-        vector<SIPPNode> SIPP_list=SIPP_get_neighbor(curr,last_move_pos,safe_intervals,end);
-        //cout<<"size of neighbors"<<endl;
-        //cout<<"size of neighbors"<<SIPP_list.size()<<endl;
-        for (int i=0;i<SIPP_list.size();i++){
-            if (SIPP_list[i].arrive_time==0){
-                //cout<<"neighborhood starts!"<<endl;
-                //cout<<SIPP_list[i].arrive_time<<endl;
-                //cout<<"neighborhood ends!"<<endl;
-            }
-            //cout<<SIPP_list[i].parent->f<<endl;
-            //SIPP_list[i].f=SIPP_list[i].g+SIPP_list[i].h;
-            //cout<<SIPP_list[i]->f<<endl;
-            //cout<<SIPP_list[i]->g<<endl;
-            //cout<<SIPP_list[i]->h<<endl;
-            //cout<<SIPP_list[i].location<<endl;
-            bool flag= false;
-            insert_key=SIPP_list[i].arrive_time*maximum_timestep+SIPP_list[i].location;
-            auto found = close_list.find(insert_key);
-            if (found != close_list.end()) {
+        map=env->map;
+        SIPPNode* sipp_node=curr;
+        int move_time=sipp_node->safe_interval.second-sipp_node->arrive_time;
+        int maximum_rot_time=move_time-1;
+        int location=sipp_node->location;
+        int candidates[4] = { location + 1,location + env->cols, location - 1, location - env->cols};
+        int minimum_rot_step[4]={0,0,0,0};
+        SIPPNode* parent_node=sipp_node;
+        SIPPNode parent_object=*curr;
+        SIPP_node_list_copy.push_back(parent_object);
+        int objects_num=SIPP_node_list_copy.size();
+        //for (int k=0;k<SIPP_node_list_copy.size();k++){
+            //cout<<SIPP_node_list_copy[k].location<<endl;
+        //}
+        //cout<<parent_object.f<<endl;
+        //cout<<parent_object.g<<endl;
+        //cout<<parent_object.h<<endl;
 
-            } else {
-                open_list.push(SIPP_list[i]);
+        //cout<<parent_node->location<<endl;
+        for (int i=0;i<4;i++){
+            int check_candidate=candidates[i];
+            if (sipp_node->arrive_dir==i){
+                minimum_rot_step[i]=0;
+            }
+            else{
+                if (abs(sipp_node->arrive_dir-i)>4-abs(i-sipp_node->arrive_dir)){
+                    minimum_rot_step[i]=4-abs(i-sipp_node->arrive_dir);
+                }
+                else{
+                    minimum_rot_step[i]=abs(sipp_node->arrive_dir-i);
+                }
+            }
+            if (check_candidate<0 or check_candidate>=env->map.size()){
+                continue;
+            }
+            if (minimum_rot_step[i]>maximum_rot_time or map[check_candidate]==1){
+                continue;
+            }
+            //cout<<minimum_rot_step[i]<<endl;
+            int minimum_leave_time=sipp_node->arrive_time+minimum_rot_step[i];
+            //cout<<parent_object.location<<endl;
+            vector<pair<int,int>> candidate_intervals=safe_intervals[check_candidate];
+
+            int intervals_num=candidate_intervals.size();
+            //cout<<curr->location<<endl;
+            //cout<<"phase 1"<<endl;
+            for (int j=0;j<intervals_num;j++){
+                int maximum_leave_time=sipp_node->safe_interval.second;
+                pair<int,int> current_interval=candidate_intervals[j];
+                if (current_interval.first>maximum_leave_time+1){
+                    continue;
+                }
+                else if (current_interval.second<minimum_leave_time+1){
+                    continue;
+                }
+                int t= max(minimum_leave_time+1,current_interval.first);
+                //cout<<t<<endl;
+                //cout<<curr->location<<endl;
+                cout<<objects_num-1<<endl;
+                SIPPNode new_node=SIPPNode(t, current_interval, t+getManhattanDistance(check_candidate, end), t, getManhattanDistance(check_candidate, end),
+                                           &SIPP_node_list_copy[objects_num-1],check_candidate,i);
+                //if (new_node.g<50){
+                    //cout<<new_node.f<<endl;
+                    //cout<<new_node.g<<endl;
+                    //cout<<new_node.h<<endl;
+                //}
+                //cout<<new_node.parent->location<<endl;
+                //cout<<check_candidate<<endl;
+                //cout<<curr->location<<endl;
+                insert_key=new_node.arrive_time*maximum_timestep+new_node.location;
+                auto found = close_list.find(insert_key);
+                if (found != close_list.end()) {
+
+                } else {
+                open_list.push(new_node);
                 //cout<<SIPP_list[i].parent->location<<endl;
                 close_list.insert(insert_key);
-            }
+                }
 
+                //SIPPNode_list_object.push_back(new_node);
+                //SIPPNode_list.push_back(&new_node);
+                //cout<<curr->location<<endl;
+            }
         }
+        //vector<SIPPNode> SIPPNode_list=SIPP_get_neighbor(curr,last_move_pos,safe_intervals,end);
+        //cout<<"end getting neighborhoods"<<endl;
+
+        //cout<<"size of neighbors"<<endl;
+        //cout<<"size of neighbors"<<SIPP_list.size()<<endl;
+        //for (int i=0;i<SIPPNode_list.size();i++){
+            //bool flag= false;
+            //insert_key=SIPPNode_list[i].arrive_time*maximum_timestep+SIPPNode_list[i].location;
+            //auto found = close_list.find(insert_key);
+            //if (found != close_list.end()) {
+
+            //} else {
+                //open_list.push(&SIPPNode_list[i]);
+                //cout<<SIPP_list[i].parent->location<<endl;
+                //close_list.insert(insert_key);
+            //}
+
+        //}
     }
     //for (int i=0;i<current_interval.size();i++) {
         //cout<<"["<<current_interval.front().first<<","<<current_interval.front().second<<"]"<<endl;

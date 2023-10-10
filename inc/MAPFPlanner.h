@@ -52,7 +52,7 @@ public:
     std::vector<int> map;
     std::vector<int> index;
 
-    vector<SIPPNode> SIPP_get_neighbor(SIPPNode sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end);
+    vector<SIPPNode> SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end);
 
 };
 
