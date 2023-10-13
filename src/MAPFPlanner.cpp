@@ -295,11 +295,11 @@ vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<
         }
         //cout<<minimum_rot_step[i]<<endl;
         int minimum_leave_time=sipp_node->arrive_time+minimum_rot_step[i];
-        cout<<parent_object.location<<endl;
+        //cout<<parent_object.location<<endl;
         vector<pair<int,int>> candidate_intervals=safe_intervals[check_candidate];
 
         int intervals_num=candidate_intervals.size();
-        cout<<parent_node->location<<endl;
+        //cout<<parent_node->location<<endl;
         //cout<<"phase 1"<<endl;
         for (int j=0;j<intervals_num;j++){
             int maximum_leave_time=sipp_node->safe_interval.second;
@@ -313,7 +313,7 @@ vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<
             int t= max(minimum_leave_time+1,current_interval.first);
 
             SIPPNode new_node=SIPPNode(t, current_interval, t+getManhattanDistance(check_candidate, end), t, getManhattanDistance(check_candidate, end),
-                                       nullptr,check_candidate,i);
+                                       -1,check_candidate,i,last_move_pos[check_candidate][j].second);
             cout<<parent_node->location<<endl;
             SIPPNode_list_object.push_back(new_node);
             //SIPPNode_list.push_back(&new_node);
@@ -332,12 +332,16 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
     priority_queue<SIPPNode,vector<SIPPNode>,SIPP_cmp> open_list;
     vector<SIPPNode*> current_reference_list;
     vector<SIPPNode> SIPP_node_list_copy;
+    vector<pair<int,int>> agent_interpolate_path;
     unordered_map<int,SIPPNode*> all_nodes;
     unordered_set<int> close_list;
+    unordered_set<int> all_nodes_set;
     SIPPNode initial_node=SIPPNode(0, current_safe_interval, getManhattanDistance(start, end), 0, getManhattanDistance(start, end),
-                                   nullptr,start,start_direct) ;
+                                   -1,start,start_direct,last_move_pos[start][0].second) ;
     open_list.push(initial_node);
-    close_list.insert(maximum_timestep*0+start);
+    all_nodes[maximum_timestep*0+4*start+start_direct]=&initial_node;
+    close_list.insert(maximum_timestep*0+4*start+start_direct);
+    all_nodes_set.insert(maximum_timestep*0+4*start+start_direct);
     int insert_key=0;
     //cout<<"["<<current_safe_interval.first<<","<<current_safe_interval.second<<"]"<<endl;
     bool terminate_flag= false;
@@ -351,19 +355,8 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
         SIPPNode* curr=&curr_node;
         current_reference_list.push_back(curr);
         open_list.pop();
-        //curr.arrive_time=curr.g;
-        //cout<<"f: "<<curr.f<<endl;
-        //cout<<"g: "<<curr.g<<endl;
-        //cout<<"h: "<<curr.h<<endl;
-        //cout<<"location: "<<curr.location<<endl;
-        //cout<<start<<endl;
-        //cout<<curr->location<<endl;
-
-        //cout<<curr->arrive_time<<endl;
-        //cout<<curr->location<<endl;
-        //printf("%d\n",curr->h);
-        //cout<<open_list.size()<<endl;
-        //cout<<open_list.size()<<endl;
+        SIPPNode parent_object=*curr;
+        SIPP_node_list_copy.push_back(parent_object);
         if (curr->location==end){
             terminate_flag= true;
             //cout<<end<<endl;
@@ -372,18 +365,66 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
             //for (int k=0;k<SIPP_node_list_copy.size();k++){
                 //cout<<SIPP_node_list_copy[k].location<<endl;
             //}
+            vector<SIPPNode> current_path_SIPP_node;
             int count=0;
-            cout<<"location: "<<(curr)->location<<endl;
-            cout<<"Arrive time: "<<(curr)->arrive_time<<endl;
-            cout<<count<<endl;
-            while (curr->parent!= nullptr){
-                curr=curr->parent;
-                cout<<"location: "<<(curr)->location<<endl;
-                cout<<"Arrive time: "<<(curr)->arrive_time<<endl;
+            //cout<<"location: "<<(curr)->location<<endl;
+            //cout<<"Arrive time: "<<(curr)->arrive_time<<endl;
+            current_path_SIPP_node.push_back(parent_object);
+            //cout<<count<<endl;
+            while (curr->parent!= -1){
+                current_path_SIPP_node.push_back(SIPP_node_list_copy[curr->parent]);
+                curr=&SIPP_node_list_copy[curr->parent];
+                //cout<<"location: "<<(curr)->location<<endl;
+                //cout<<"Arrive time: "<<(curr)->arrive_time<<endl;
                 count=count+1;
-                cout<<count<<endl;
+                //cout<<count<<endl;
             }
-
+            std::reverse(current_path_SIPP_node.begin(), current_path_SIPP_node.end());
+            for (int r=0;r<current_path_SIPP_node.size()-1;r++){
+                int current_pos=current_path_SIPP_node[r].location;
+                int current_dir=current_path_SIPP_node[r].arrive_dir;
+                int current_time=current_path_SIPP_node[r].arrive_time;
+                int next_pos=current_path_SIPP_node[r+1].location;
+                int next_dir=current_path_SIPP_node[r+1].arrive_dir;
+                int next_time=current_path_SIPP_node[r+1].arrive_time;
+                int direction=0;
+                int rotation_time=0;
+                int wait_time=0;
+                if (abs(next_dir-current_dir)<abs(4-next_dir+current_dir)){
+                    direction=0;
+                    rotation_time=abs(next_dir-current_dir);
+                    wait_time=next_time-current_time-1-rotation_time;
+                }
+                else {
+                    direction=1;
+                    rotation_time=abs(4-next_dir+current_dir);
+                    wait_time=next_time-current_time-1-rotation_time;
+                }
+                agent_interpolate_path.emplace_back(current_pos,current_dir);
+                for (int z=0;z<wait_time;z++){
+                    agent_interpolate_path.emplace_back(current_pos,current_dir);
+                }
+                for (int z=0;z<rotation_time;z++){
+                    if (direction==0){
+                        current_dir=current_dir+1;
+                    }
+                    else{
+                        current_dir=current_dir-1;
+                    }
+                    if (current_dir<0){
+                        current_dir=3;
+                    }
+                    else if (current_dir>3){
+                        current_dir=0;
+                    }
+                    agent_interpolate_path.emplace_back(current_pos,current_dir);
+                }
+            }
+            agent_interpolate_path.emplace_back(current_path_SIPP_node[current_path_SIPP_node.size()-1].location,current_path_SIPP_node[current_path_SIPP_node.size()-1].arrive_dir);
+            for (int z=0;z<agent_interpolate_path.size();z++){
+                cout<<"location: "<<agent_interpolate_path[z].first<<endl;
+                cout<<"direction: "<<agent_interpolate_path[z].second<<endl;
+            }
             //cout<<curr->parent->parent->location<<endl;
             //cout<<"location: "<<curr->parent->location<<endl;
             //cout<<"location: "<<curr->parent->arrive_time<<endl;
@@ -399,9 +440,6 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
         int location=sipp_node->location;
         int candidates[4] = { location + 1,location + env->cols, location - 1, location - env->cols};
         int minimum_rot_step[4]={0,0,0,0};
-        SIPPNode* parent_node=sipp_node;
-        SIPPNode parent_object=*curr;
-        SIPP_node_list_copy.push_back(parent_object);
         int objects_num=SIPP_node_list_copy.size();
         //for (int k=0;k<SIPP_node_list_copy.size();k++){
             //cout<<SIPP_node_list_copy[k].location<<endl;
@@ -436,10 +474,14 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
             vector<pair<int,int>> candidate_intervals=safe_intervals[check_candidate];
 
             int intervals_num=candidate_intervals.size();
+            int maximum_leave_time=sipp_node->safe_interval.second;
+            if (curr->current_interval_next_pos!=-1 and check_candidate==curr->current_interval_next_pos){
+                maximum_leave_time=maximum_leave_time-1;
+            }
+
             //cout<<curr->location<<endl;
             //cout<<"phase 1"<<endl;
             for (int j=0;j<intervals_num;j++){
-                int maximum_leave_time=sipp_node->safe_interval.second;
                 pair<int,int> current_interval=candidate_intervals[j];
                 if (current_interval.first>maximum_leave_time+1){
                     continue;
@@ -450,9 +492,9 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
                 int t= max(minimum_leave_time+1,current_interval.first);
                 //cout<<t<<endl;
                 //cout<<curr->location<<endl;
-                cout<<objects_num-1<<endl;
+                //cout<<objects_num-1<<endl;
                 SIPPNode new_node=SIPPNode(t, current_interval, t+getManhattanDistance(check_candidate, end), t, getManhattanDistance(check_candidate, end),
-                                           &SIPP_node_list_copy[objects_num-1],check_candidate,i);
+                                           objects_num-1,check_candidate,i,last_move_pos[check_candidate][j].second);
                 //if (new_node.g<50){
                     //cout<<new_node.f<<endl;
                     //cout<<new_node.g<<endl;
@@ -461,14 +503,27 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
                 //cout<<new_node.parent->location<<endl;
                 //cout<<check_candidate<<endl;
                 //cout<<curr->location<<endl;
-                insert_key=new_node.arrive_time*maximum_timestep+new_node.location;
+                insert_key=j*maximum_timestep+4*new_node.location+new_node.arrive_dir;
                 auto found = close_list.find(insert_key);
                 if (found != close_list.end()) {
 
                 } else {
-                open_list.push(new_node);
-                //cout<<SIPP_list[i].parent->location<<endl;
-                close_list.insert(insert_key);
+                    auto found = all_nodes_set.find(insert_key);
+                    if (found ==all_nodes_set.end()) {
+                        all_nodes_set.insert(insert_key);
+                        all_nodes[insert_key]=&new_node;
+                        open_list.push(new_node);
+                        close_list.insert(insert_key);
+                    }
+                    else{
+                        SIPPNode* exist_node=all_nodes[insert_key];
+                        if (exist_node->arrive_time>new_node.arrive_time){
+                            exist_node->arrive_time=new_node.arrive_time;
+                            exist_node->f=new_node.f;
+                            exist_node->g=new_node.g;
+                        }
+                    }
+
                 }
 
                 //SIPPNode_list_object.push_back(new_node);

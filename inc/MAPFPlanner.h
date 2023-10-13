@@ -9,9 +9,10 @@ struct SIPPNode {
     pair<int,int> safe_interval;
     int location;
     int f,g,h;
-    SIPPNode* parent;
-    SIPPNode(int _arrive_time,pair<int,int> _safe_interval,int _f, int _g, int _h, SIPPNode* _parent,int _location,int _arrive_dir):
-            arrive_time(_arrive_time),safe_interval(_safe_interval),f(_f),g(_g),h(_h),parent(_parent),location(_location),arrive_dir(_arrive_dir) {} ;
+    int parent;
+    int current_interval_next_pos;
+    SIPPNode(int _arrive_time,pair<int,int> _safe_interval,int _f, int _g, int _h, int _parent,int _location,int _arrive_dir,int _current_interval_next_pos):
+            arrive_time(_arrive_time),safe_interval(_safe_interval),f(_f),g(_g),h(_h),parent(_parent),location(_location),arrive_dir(_arrive_dir),current_interval_next_pos(_current_interval_next_pos) {} ;
 };
 class MAPFPlanner
 {
