@@ -641,6 +641,52 @@ list<pair<int,int>> MAPFPlanner::getNeighbors(int location,int direction)
     return neighbors;
 }
 
-void MAPFPlanner::SIPP_update_safe_intervals(const vector<SIPPNode>& planned_path){
+/**
+ * @brief update the safe intervals of all vertices
+ * @param planned_path The planned path of an agent, whose element is a pair of the location and the direction
+ * @param current_time_step The current time step
+ * @param rhcr_w The time interval we want to resolve conflicts
+*/
+void MAPFPlanner::SIPP_update_safe_intervals(const vector<pair<int, int>>* agent_planned_path, const int current_time_step, const int& rhcr_w){
     
+    for (int i = 0; i < rhcr_w; i++) {
+        location = agent_planned_path[i].first;
+        location_safe_intervals = safe_intervals[location];
+
+        // check if the current time step is in the safe interval, [low, high)
+        for (auto time_interval: location_safe_intervals) {
+            if (current_time_step >= time_interval.first && current_time_step < time_interval.second) {
+                
+                // if the current time step is in the safe interval, then update the safe interval
+                if (current_time_step == time_interval.first) {
+
+                    time_interval.first = current_time_step + 1; 
+
+                } else if (current_time_step == time_interval.second - 1) {
+
+                    time_interval.second = current_time_step;
+                    // if the lower bound of the safe interval is equal to the upper bound, then remove the safe interval
+                    if (time_interval.first == time_interval.second) {
+                        location_safe_intervals.erase(time_interval);
+                    }
+
+                } else {
+
+                    // if the current time step is in between the safe interval, then split the safe interval into two
+                    pair<int, int> new_interval_1 = make_pair(time_interval.first, current_time_step);
+                    pair<int, int> new_interval_2 = make_pair(current_time_step + 1, time_interval.second);
+                    location_safe_intervals.push_back(new_interval_1);
+                    location_safe_intervals.push_back(new_interval_2);
+                    location_safe_intervals.erase(time_interval);
+
+                }
+                
+            }
+            else {
+                // if the current time step is not in the safe interval, then do nothing
+            }
+        }
+
+
+    }
 }
