@@ -35,25 +35,25 @@ public:
     std::list<pair<int,int>> getNeighbors(int location, int direction);
     bool validateMove(int loc,int loc2);
 
+    // End kit dummy implementation
+
     int* priority_order;
     int* agent_path_index;
-
-    void map_index_to_vec_index(int map_h, int map_w, int &vec_index);
-
-    void vec_index_to_map_index(int &map_h, int &map_w, int vec_index);
     int RHCR_w; //The time interval that we want to resolve collisions
     int RHCR_h; //planning interval
-    bool decide_when_to_plan(int current_timestep, int RGCR_h);
-    vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval);
-    pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time);
     vector<pair<int,int>>* agents_path;
     vector<pair<int,int>>* safe_intervals; // safe intervals for all vertices
     vector<pair<int,int>>* last_move_pos;
     std::vector<int> map;
     std::vector<int> index;
 
+    void map_index_to_vec_index(int map_h, int map_w, int &vec_index);
+    void vec_index_to_map_index(int &map_h, int &map_w, int vec_index);
+    
+    bool decide_when_to_plan(int current_timestep, int RGCR_h);
+    vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval);
+    pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time);
     vector<SIPPNode> SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end);
-
-    void SIPP_update_safe_intervals(const vector<SIPPNode>& planned_path);
+    void SIPP_update_safe_intervals(const vector<pair<int, int>>* agent_planned_path, const int current_time_step, const int& rhcr_w);
 };
 
