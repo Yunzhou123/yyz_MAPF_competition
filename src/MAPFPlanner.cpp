@@ -640,3 +640,7 @@ list<pair<int,int>> MAPFPlanner::getNeighbors(int location,int direction)
     neighbors.emplace_back(make_pair(location,direction)); //wait
     return neighbors;
 }
+
+void MAPFPlanner::SIPP_update_safe_intervals(const vector<SIPPNode>& planned_path){
+    
+}

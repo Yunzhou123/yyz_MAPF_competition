@@ -47,12 +47,13 @@ public:
     vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval);
     pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time);
     vector<pair<int,int>>* agents_path;
-    vector<pair<int,int>>* safe_intervals;
+    vector<pair<int,int>>* safe_intervals; // safe intervals for all vertices
     vector<pair<int,int>>* last_move_pos;
     std::vector<int> map;
     std::vector<int> index;
 
     vector<SIPPNode> SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end);
 
+    void SIPP_update_safe_intervals(const vector<SIPPNode>& planned_path);
 };
 
