@@ -651,10 +651,9 @@ void MAPFPlanner::SIPP_update_safe_intervals(const vector<pair<int, int>>* agent
     
     for (int i = 0; i < rhcr_w; i++) {
         location = agent_planned_path[i].first;
-        location_safe_intervals = safe_intervals[location];
 
         // check if the current time step is in the safe interval, [low, high)
-        for (auto time_interval: location_safe_intervals) {
+        for (auto time_interval: safe_intervals[location]) {
             if (current_time_step >= time_interval.first && current_time_step < time_interval.second) {
 
                 // if the current time step is in the safe interval, then update the safe interval
@@ -664,7 +663,7 @@ void MAPFPlanner::SIPP_update_safe_intervals(const vector<pair<int, int>>* agent
 
                     // if the lower bound of the safe interval is equal to the upper bound, then remove the safe interval
                     if (time_interval.first == time_interval.second) {
-                        location_safe_intervals.erase(time_interval);
+                        safe_intervals[location].erase(time_interval);
                     }
 
                 } else {
@@ -672,12 +671,12 @@ void MAPFPlanner::SIPP_update_safe_intervals(const vector<pair<int, int>>* agent
                     // if the current time step is in between the safe interval, then split the safe interval into two
                     pair<int, int> new_interval_1 = make_pair(time_interval.first, current_time_step);
                     pair<int, int> new_interval_2 = make_pair(current_time_step + 1, time_interval.second);
-                    location_safe_intervals.push_back(new_interval_1);
-                    location_safe_intervals.push_back(new_interval_2);
-                    location_safe_intervals.erase(time_interval);
+                    safe_intervals[location].push_back(new_interval_1);
+                    safe_intervals[location].push_back(new_interval_2);
+                    safe_intervals[location].erase(time_interval);
 
                 }
-                
+                break;
             }
             else {
                 // if the current time step is not in the safe interval, then do nothing
