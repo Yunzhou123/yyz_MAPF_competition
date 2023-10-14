@@ -145,30 +145,33 @@ void MAPFPlanner::initialize(int preprocess_time_limit)
 
 }
 
+/// convert 2D index to 1D index
 void MAPFPlanner::map_index_to_vec_index(int map_h, int map_w,int& vec_index)
 {
     vec_index=map_h*env->cols+map_w;
 }
 
+/// convert 1D index to 2D index
 void MAPFPlanner::vec_index_to_map_index(int& map_h, int& map_w,int vec_index)
 {
     map_h=int(vec_index/env->cols);
     map_w=vec_index-map_h*env->cols;
 }
 
+/// RHCR Algorithm
 bool MAPFPlanner::decide_when_to_plan(int current_timestep,int RHCR_h){
-bool flag= false;
-float residue=current_timestep-RHCR_h*int(current_timestep/RHCR_h);
-if (residue==0){
-    flag= true;
-}
-else{
-    flag= false;
-}
-return flag;
+    bool flag= false;
+    float residue=current_timestep-RHCR_h*int(current_timestep/RHCR_h);
+    if (residue==0){
+        flag= true;
+    }
+    else{
+        flag= false;
+    }
+    return flag;
 }
 
-// plan using simple A* that ignores the time dimension
+/// plan using simple A* that ignores the time dimension
 void MAPFPlanner::plan(int time_limit,vector<Action> & actions) 
 {
 
@@ -282,7 +285,15 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
   return;
 }
 
-vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end){
+/**
+ * @brief retrieve the valid neighbors of the current vertex
+ * @param location The current vertex
+ * @param last_move_pos
+ * @param safe_intervals The safe intervals of all vertices
+ * @param end The goal vertex
+ * @return The valid neighbors of the current vertex
+*/
+vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode* sipp_node, vector<pair<int,int>>* last_move_pos, vector<pair<int,int>>* safe_intervals, int end){
     map=env->map;
     int move_time=sipp_node->safe_interval.second-sipp_node->arrive_time;
     int maximum_rot_time=move_time-1;
