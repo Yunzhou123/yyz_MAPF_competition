@@ -32,7 +32,14 @@ struct SIPP_cmp
         else return a.f > b.f;
     }
 };
+
 int a=1+1;
+
+/**
+ * @brief argsort
+ * @param array The array to sort
+ * @return The indices of the sorted array in ascending order
+*/
 template<typename T> std::vector<int> argsort(const std::vector<T>& array)
 {
     const int array_len(array.size());
@@ -45,6 +52,13 @@ template<typename T> std::vector<int> argsort(const std::vector<T>& array)
 
     return array_index;
 }
+
+/**
+ * @brief extract the corresponding safe interval of the current time from the safe interval list
+ * @param current_safe_intervals The safe intervals of the current vertex
+ * @param current_time The current time
+ * @return The corresponding safe interval
+*/
 pair<int,int> MAPFPlanner::compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time){
     int intervals_num=current_safe_intervals.size();
     int low_index=0;
@@ -81,6 +95,8 @@ pair<int,int> MAPFPlanner::compute_current_interval(vector<pair<int,int>> curren
     }
     return rtn_interval;
 }
+
+/// initialize the planner
 void MAPFPlanner::initialize(int preprocess_time_limit)
 {
     MAPFPlanner::map=env->map;
@@ -128,15 +144,18 @@ void MAPFPlanner::initialize(int preprocess_time_limit)
     cout << "planner initialize done" << endl;
 
 }
+
 void MAPFPlanner::map_index_to_vec_index(int map_h, int map_w,int& vec_index)
 {
     vec_index=map_h*env->cols+map_w;
 }
+
 void MAPFPlanner::vec_index_to_map_index(int& map_h, int& map_w,int vec_index)
 {
     map_h=int(vec_index/env->cols);
     map_w=vec_index-map_h*env->cols;
 }
+
 bool MAPFPlanner::decide_when_to_plan(int current_timestep,int RHCR_h){
 bool flag= false;
 float residue=current_timestep-RHCR_h*int(current_timestep/RHCR_h);
@@ -148,6 +167,7 @@ else{
 }
 return flag;
 }
+
 // plan using simple A* that ignores the time dimension
 void MAPFPlanner::plan(int time_limit,vector<Action> & actions) 
 {
@@ -261,6 +281,7 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
     }
   return;
 }
+
 vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end){
     map=env->map;
     int move_time=sipp_node->safe_interval.second-sipp_node->arrive_time;
@@ -500,6 +521,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
     //}
     return path;
 }
+
 vector<pair<int,int>> MAPFPlanner::single_agent_plan(int start,int start_direct,int end)
 {
     cout<<"Begin the A star algorithm"<<endl;
@@ -560,7 +582,6 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan(int start,int start_direct,
     return path;
 }
 
-
 int MAPFPlanner::getManhattanDistance(int loc1, int loc2)
 {
     int loc1_x = loc1/env->cols;
@@ -569,7 +590,6 @@ int MAPFPlanner::getManhattanDistance(int loc1, int loc2)
     int loc2_y = loc2%env->cols;
     return abs(loc1_x - loc2_x) + abs(loc1_y - loc2_y);
 }
-
 
 bool MAPFPlanner::validateMove(int loc, int loc2)
 {
@@ -586,7 +606,6 @@ bool MAPFPlanner::validateMove(int loc, int loc2)
     return true;
 
 }
-
 
 list<pair<int,int>> MAPFPlanner::getNeighbors(int location,int direction)
 {
