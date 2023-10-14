@@ -656,15 +656,12 @@ void MAPFPlanner::SIPP_update_safe_intervals(const vector<pair<int, int>>* agent
         // check if the current time step is in the safe interval, [low, high)
         for (auto time_interval: location_safe_intervals) {
             if (current_time_step >= time_interval.first && current_time_step < time_interval.second) {
-                
+
                 // if the current time step is in the safe interval, then update the safe interval
                 if (current_time_step == time_interval.first) {
 
                     time_interval.first = current_time_step + 1; 
 
-                } else if (current_time_step == time_interval.second - 1) {
-
-                    time_interval.second = current_time_step;
                     // if the lower bound of the safe interval is equal to the upper bound, then remove the safe interval
                     if (time_interval.first == time_interval.second) {
                         location_safe_intervals.erase(time_interval);
