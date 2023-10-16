@@ -46,7 +46,7 @@ public:
     int RHCR_h; //planning interval
     bool decide_when_to_plan(int current_timestep, int RGCR_h);
     vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval);
-    pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time);
+    pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time,int* rtn_index);
     vector<pair<int,int>>* agents_path;
     vector<pair<int,int>>* safe_intervals;
     vector<pair<int,int>>* last_move_pos;
@@ -55,5 +55,6 @@ public:
 
     vector<SIPPNode> SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end);
 
+    void SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path);
 };
 

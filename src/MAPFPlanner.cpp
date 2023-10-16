@@ -33,6 +33,12 @@ struct SIPP_cmp
     }
 };
 int a=1+1;
+
+/**
+ * @brief argsort
+ * @param array The array to sort
+ * @return The indices of the sorted array in ascending order
+*/
 template<typename T> std::vector<int> argsort(const std::vector<T>& array)
 {
     const int array_len(array.size());
@@ -45,7 +51,14 @@ template<typename T> std::vector<int> argsort(const std::vector<T>& array)
 
     return array_index;
 }
-pair<int,int> MAPFPlanner::compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time){
+
+/**
+ * @brief extract the corresponding safe interval of the current time from the safe interval list
+ * @param current_safe_intervals The safe intervals of the current vertex
+ * @param current_time The current time
+ * @return The corresponding safe interval
+*/
+pair<int,int> MAPFPlanner::compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time,int* rtn_index){
     int intervals_num=current_safe_intervals.size();
     int low_index=0;
     int high_index=intervals_num-1;
@@ -53,6 +66,8 @@ pair<int,int> MAPFPlanner::compute_current_interval(vector<pair<int,int>> curren
     bool flag= false;
     pair<int,int> rtn_interval=make_pair(0,0);
     while (flag== false){
+        //cout<<current_time<<endl;
+        //cout<<current_safe_intervals[check_index].first<<","<<current_safe_intervals[check_index].second<<endl;
         if ((current_time<=current_safe_intervals[check_index].second) and (current_time>=current_safe_intervals[check_index].first)){
             rtn_interval=current_safe_intervals[check_index];
             flag= true;
@@ -70,17 +85,20 @@ pair<int,int> MAPFPlanner::compute_current_interval(vector<pair<int,int>> curren
             }
             else {
                 if (current_time>current_safe_intervals[check_index].second){
-                    low_index=high_index;
+                    low_index=check_index;
                 }
                 else{
-                    check_index=low_index;
+                    high_index=check_index;
                 }
                 check_index=int((low_index+high_index)/2);
             }
         }
     }
+    *rtn_index=check_index;
     return rtn_interval;
 }
+
+/// initialize the planner
 void MAPFPlanner::initialize(int preprocess_time_limit)
 {
     MAPFPlanner::map=env->map;
@@ -128,15 +146,20 @@ void MAPFPlanner::initialize(int preprocess_time_limit)
     cout << "planner initialize done" << endl;
 
 }
+
+/// convert 2D index to 1D index
 void MAPFPlanner::map_index_to_vec_index(int map_h, int map_w,int& vec_index)
 {
     vec_index=map_h*env->cols+map_w;
 }
+/// convert 1D index to 2D index
 void MAPFPlanner::vec_index_to_map_index(int& map_h, int& map_w,int vec_index)
 {
     map_h=int(vec_index/env->cols);
     map_w=vec_index-map_h*env->cols;
 }
+
+/// RHCR Algorithm
 bool MAPFPlanner::decide_when_to_plan(int current_timestep,int RHCR_h){
 bool flag= false;
 float residue=current_timestep-RHCR_h*int(current_timestep/RHCR_h);
@@ -148,7 +171,7 @@ else{
 }
 return flag;
 }
-// plan using simple A* that ignores the time dimension
+// plan and refine the paths, and generate actions for each agent
 void MAPFPlanner::plan(int time_limit,vector<Action> & actions) 
 {
 
@@ -161,7 +184,7 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
         cout<<"false"<<endl;
     }
     actions = std::vector<Action>(env->curr_states.size(), Action::W);
-    if (flag==true){
+    if (flag==true and env->curr_timestep>=4981){
         //cout<<env->num_of_agents<<endl;
         //for (int i = 0; i < env->num_of_agents; ++i) {
         //cout<<priority_order[i]<<endl;
@@ -261,6 +284,15 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
     }
   return;
 }
+
+/**
+ * @brief retrieve the valid neighbors of the current vertex
+ * @param location The current vertex
+ * @param last_move_pos
+ * @param safe_intervals The safe intervals of all vertices
+ * @param end The goal vertex
+ * @return The valid neighbors of the current vertex
+*/
 vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end){
     map=env->map;
     int move_time=sipp_node->safe_interval.second-sipp_node->arrive_time;
@@ -327,7 +359,8 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
     int start_time=env->curr_timestep;
     vector<pair<int,int>> path;
     vector<pair<int,int>> current_interval=safe_intervals[start];
-    pair<int,int> current_safe_interval= compute_current_interval(current_interval,start_time);
+    int rtn_index;
+    pair<int,int> current_safe_interval= compute_current_interval(current_interval,start_time,&rtn_index);
     int maximum_timestep=100000;
     priority_queue<SIPPNode,vector<SIPPNode>,SIPP_cmp> open_list;
     vector<SIPPNode*> current_reference_list;
@@ -336,7 +369,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
     unordered_map<int,SIPPNode*> all_nodes;
     unordered_set<int> close_list;
     unordered_set<int> all_nodes_set;
-    SIPPNode initial_node=SIPPNode(0, current_safe_interval, getManhattanDistance(start, end), 0, getManhattanDistance(start, end),
+    SIPPNode initial_node=SIPPNode(start_time+0, current_safe_interval, getManhattanDistance(start, end), 0, getManhattanDistance(start, end),
                                    -1,start,start_direct,last_move_pos[start][0].second) ;
     open_list.push(initial_node);
     all_nodes[maximum_timestep*0+4*start+start_direct]=&initial_node;
@@ -390,14 +423,14 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
                 int direction=0;
                 int rotation_time=0;
                 int wait_time=0;
-                if (abs(next_dir-current_dir)<abs(4-next_dir+current_dir)){
+                if (abs(next_dir-current_dir)<4-abs(next_dir-current_dir)){
                     direction=0;
                     rotation_time=abs(next_dir-current_dir);
                     wait_time=next_time-current_time-1-rotation_time;
                 }
                 else {
                     direction=1;
-                    rotation_time=abs(4-next_dir+current_dir);
+                    rotation_time=4-abs(next_dir-current_dir);
                     wait_time=next_time-current_time-1-rotation_time;
                 }
                 agent_interpolate_path.emplace_back(current_pos,current_dir);
@@ -425,6 +458,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
                 cout<<"location: "<<agent_interpolate_path[z].first<<endl;
                 cout<<"direction: "<<agent_interpolate_path[z].second<<endl;
             }
+            SIPP_update_safe_intervals(agent_interpolate_path);
             //cout<<curr->parent->parent->location<<endl;
             //cout<<"location: "<<curr->parent->location<<endl;
             //cout<<"location: "<<curr->parent->arrive_time<<endl;
@@ -519,6 +553,9 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
                         SIPPNode* exist_node=all_nodes[insert_key];
                         if (exist_node->arrive_time>new_node.arrive_time){
                             exist_node->arrive_time=new_node.arrive_time;
+                            exist_node->safe_interval=new_node.safe_interval;
+                            exist_node->parent=new_node.parent;
+                            exist_node->current_interval_next_pos=new_node.current_interval_next_pos;
                             exist_node->f=new_node.f;
                             exist_node->g=new_node.g;
                         }
@@ -664,4 +701,67 @@ list<pair<int,int>> MAPFPlanner::getNeighbors(int location,int direction)
     neighbors.emplace_back(make_pair(location,new_direction));
     neighbors.emplace_back(make_pair(location,direction)); //wait
     return neighbors;
+}
+/**
+ * @brief update the safe intervals of all vertices
+ * @param planned_path The planned path of an agent, whose element is a pair of the location and the direction
+ * @param current_time_step The current time step
+ * @param rhcr_w The time interval we want to resolve conflicts
+*/
+void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path){
+    vector<int> last_position_list;
+    last_position_list.push_back(-1);
+    for (int i = 0; i < RHCR_w; i++) {
+        int location;
+        if (i==agent_planned_path.size()){
+            break;
+        }
+        location = agent_planned_path[i].first;
+        if (location!=last_position_list[last_position_list.size()-1]){
+            last_position_list.push_back(location);
+        }
+        int last_position=last_position_list[last_position_list.size()-2];
+        int current_time_step=env->curr_timestep+i;
+        int rtn_index;
+
+        //cout<<current_time_step<<endl;
+        //cout<<location<<endl;
+        //for (int r=0;r<safe_intervals[location].size();r++){
+            //cout<<safe_intervals[location][r].first<<","<<safe_intervals[location][r].second<<endl;
+        //}
+        compute_current_interval(safe_intervals[location],current_time_step,&rtn_index);
+        if (current_time_step==safe_intervals[location][rtn_index].first){
+            safe_intervals[location][rtn_index].first=safe_intervals[location][rtn_index].first+1;
+            last_move_pos[location][rtn_index].first=last_position;
+            if (safe_intervals[location][rtn_index].first>safe_intervals[location][rtn_index].second){
+                safe_intervals[location].erase(safe_intervals[location].begin()+rtn_index);
+                last_move_pos[location].erase(last_move_pos[location].begin()+rtn_index);
+            }
+        }
+        else if (current_time_step==safe_intervals[location][rtn_index].second){
+            safe_intervals[location][rtn_index].second=safe_intervals[location][rtn_index].second-1;
+            last_move_pos[location][rtn_index].second=last_position;
+            if (safe_intervals[location][rtn_index].first>safe_intervals[location][rtn_index].second){
+                safe_intervals[location].erase(safe_intervals[location].begin()+rtn_index);
+                last_move_pos[location].erase(last_move_pos[location].begin()+rtn_index);
+            }
+        }
+        else{
+            pair<int, int> new_interval_1 = make_pair(safe_intervals[location][rtn_index].first, current_time_step-1);
+            pair<int, int> new_interval_2 = make_pair(current_time_step + 1, safe_intervals[location][rtn_index].second);
+            pair<int, int> last_pos_interval_1 = make_pair(-1, last_position);
+            pair<int, int> last_pos_interval_2 = make_pair(last_position, -1);
+            safe_intervals[location].erase(safe_intervals[location].begin()+rtn_index);
+            int sum_count=0;
+            if (new_interval_1.second> new_interval_1.first){
+                safe_intervals[location].insert(safe_intervals[location].begin()+rtn_index+sum_count,new_interval_1);
+                last_move_pos[location].insert(last_move_pos[location].begin()+rtn_index+sum_count,last_pos_interval_1);
+                sum_count=sum_count+1;
+            }
+            if (new_interval_2.second> new_interval_2.first){
+                safe_intervals[location].insert(safe_intervals[location].begin()+rtn_index+sum_count,new_interval_2);
+                last_move_pos[location].insert(last_move_pos[location].begin()+rtn_index+sum_count,last_pos_interval_2);
+            }
+        }
+    }
 }
