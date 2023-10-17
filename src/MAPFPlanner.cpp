@@ -32,6 +32,7 @@ struct SIPP_cmp
         else return a.f > b.f;
     }
 };
+
 int a=1+1;
 
 /**
@@ -152,6 +153,7 @@ void MAPFPlanner::map_index_to_vec_index(int map_h, int map_w,int& vec_index)
 {
     vec_index=map_h*env->cols+map_w;
 }
+
 /// convert 1D index to 2D index
 void MAPFPlanner::vec_index_to_map_index(int& map_h, int& map_w,int vec_index)
 {
@@ -161,17 +163,19 @@ void MAPFPlanner::vec_index_to_map_index(int& map_h, int& map_w,int vec_index)
 
 /// RHCR Algorithm
 bool MAPFPlanner::decide_when_to_plan(int current_timestep,int RHCR_h){
-bool flag= false;
-float residue=current_timestep-RHCR_h*int(current_timestep/RHCR_h);
-if (residue==0){
-    flag= true;
+    bool flag= false;
+    float residue=current_timestep-RHCR_h*int(current_timestep/RHCR_h);
+    if (residue==0){
+        flag= true;
+    }
+    else{
+        flag= false;
+    }
+    return flag;
 }
-else{
-    flag= false;
-}
-return flag;
-}
-// plan and refine the paths, and generate actions for each agent
+
+
+/// plan and refine the paths, and generate actions for each agent
 void MAPFPlanner::plan(int time_limit,vector<Action> & actions) 
 {
 
@@ -293,7 +297,8 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
  * @param end The goal vertex
  * @return The valid neighbors of the current vertex
 */
-vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end){
+vector<SIPPNode> MAPFPlanner::SIPP_get_neighbor(SIPPNode* sipp_node, vector<pair<int,int>>* last_move_pos, vector<pair<int,int>>* safe_intervals, int end){
+
     map=env->map;
     int move_time=sipp_node->safe_interval.second-sipp_node->arrive_time;
     int maximum_rot_time=move_time-1;
@@ -592,6 +597,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
     //}
     return path;
 }
+
 vector<pair<int,int>> MAPFPlanner::single_agent_plan(int start,int start_direct,int end)
 {
     cout<<"Begin the A star algorithm"<<endl;
@@ -652,7 +658,6 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan(int start,int start_direct,
     return path;
 }
 
-
 int MAPFPlanner::getManhattanDistance(int loc1, int loc2)
 {
     int loc1_x = loc1/env->cols;
@@ -661,7 +666,6 @@ int MAPFPlanner::getManhattanDistance(int loc1, int loc2)
     int loc2_y = loc2%env->cols;
     return abs(loc1_x - loc2_x) + abs(loc1_y - loc2_y);
 }
-
 
 bool MAPFPlanner::validateMove(int loc, int loc2)
 {
@@ -678,7 +682,6 @@ bool MAPFPlanner::validateMove(int loc, int loc2)
     return true;
 
 }
-
 
 list<pair<int,int>> MAPFPlanner::getNeighbors(int location,int direction)
 {
@@ -702,6 +705,7 @@ list<pair<int,int>> MAPFPlanner::getNeighbors(int location,int direction)
     neighbors.emplace_back(make_pair(location,direction)); //wait
     return neighbors;
 }
+
 /**
  * @brief update the safe intervals of all vertices
  * @param planned_path The planned path of an agent, whose element is a pair of the location and the direction
