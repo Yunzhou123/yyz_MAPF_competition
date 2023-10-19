@@ -184,7 +184,7 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
         cout<<"false"<<endl;
     }
     actions = std::vector<Action>(env->curr_states.size(), Action::W);
-    if (flag==true and env->curr_timestep>=4981){
+    if (flag==true){
         //cout<<env->num_of_agents<<endl;
         //for (int i = 0; i < env->num_of_agents; ++i) {
         //cout<<priority_order[i]<<endl;
@@ -227,10 +227,25 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
                                          //env->curr_states[current_agent].orientation,
                                          //env->goal_locations[current_agent].front().first);
                 cout<<"Begin to use SIPP"<<endl;
-                single_agent_plan_SIPP(env->curr_states[current_agent].location,
+                path=single_agent_plan_SIPP(env->curr_states[current_agent].location,
                                        env->curr_states[current_agent].orientation,
                                        env->goal_locations[current_agent].front().first,safe_intervals);
                 agents_path[current_agent]=path;
+                if (agents_path[current_agent][0].first != agents_path[current_agent][1].first){
+                    actions[current_agent] = Action::FW; //forward action
+                }
+                else if (agents_path[current_agent][1].second!= agents_path[current_agent][0].second)
+                {
+                int incr = agents_path[current_agent][1].second - agents_path[current_agent][0].second;
+                if (incr == 1 || incr == -3)
+                {
+                   actions[current_agent] = Action::CR; //C--counter clockwise rotate
+                  }
+                 else if (incr == -1 || incr == 3)
+                 {
+                     actions[current_agent] = Action::CCR; //CCR--clockwise rotate
+                }
+                }
             }
             //if (path.front().first != env->curr_states[current_agent].location)
             //{
@@ -253,34 +268,20 @@ void MAPFPlanner::plan(int time_limit,vector<Action> & actions)
         }
     //}
     else{
-        //for (int i = 0; i < env->num_of_agents; i++){
-         //   int current_agent=index[i];
-         //   //cout<<agents_path[current_agent].size()<<endl;
-          //  if (agents_path[current_agent].size()==0){
-          //      agents_path[current_agent].push_back({env->curr_states[current_agent].location, env->curr_states[current_agent].orientation});
-          //  }
-            //cout<<agents_path[current_agent].front().first<<endl;
-            //cout<<env->curr_states[current_agent].location<<endl;
-            //cout<<env->curr_states[current_agent].orientation<<endl;
-       //     if (agents_path[current_agent].front().first != env->curr_states[current_agent].location)
-        //    {
-         //       actions[current_agent] = Action::FW; //forward action
-         //   }
-         //   else if (agents_path[current_agent].front().second!= env->curr_states[current_agent].orientation)
-         //   {
-         //       int incr = agents_path[current_agent].front().second - env->curr_states[current_agent].orientation;
-         //       if (incr == 1 || incr == -3)
-         //       {
-          //          actions[current_agent] = Action::CR; //C--counter clockwise rotate
-          //      }
-           //     else if (incr == -1 || incr == 3)
-           //     {
-            //        actions[current_agent] = Action::CCR; //CCR--clockwise rotate
-            //    }
-           // }
-           // agents_path[current_agent].erase(agents_path[current_agent].begin());
-
-       // }
+        for (int i = 0; i < env->num_of_agents; i++) {
+            int current_agent=index[i];
+            int current_timestep = env->curr_timestep % RHCR_h;
+            if (agents_path[current_agent][current_timestep].first != agents_path[current_agent][current_timestep+1].first) {
+                actions[current_agent] = Action::FW; //forward action
+            } else if (agents_path[current_agent][current_timestep+1].second != agents_path[current_agent][current_timestep].second) {
+                int incr = agents_path[current_agent][current_timestep+1].second - agents_path[current_agent][current_timestep].second;
+                if (incr == 1 || incr == -3) {
+                    actions[current_agent] = Action::CR; //C--counter clockwise rotate
+                } else if (incr == -1 || incr == 3) {
+                    actions[current_agent] = Action::CCR; //CCR--clockwise rotate
+                }
+            }
+        }
     }
   return;
 }
