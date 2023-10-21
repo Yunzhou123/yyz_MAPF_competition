@@ -45,6 +45,7 @@ public:
 
     vector<pair<int,int>>* agents_path;
     vector<pair<int,int>>* safe_intervals; // safe intervals for all vertices
+    vector<int>* occupy_id;  // use to record after this interval, which agent comes. End with -1
     vector<pair<int,int>>* last_move_pos;
     std::vector<int> map;
     std::vector<int> index;
@@ -53,9 +54,9 @@ public:
     void vec_index_to_map_index(int &map_h, int &map_w, int vec_index);
     
     bool decide_when_to_plan(int current_timestep, int RGCR_h);
-    vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval);
+    vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval, int agent_id);
     pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time);
     vector<SIPPNode> SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end);
-    void SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path);
+    void SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id);
 };
 
