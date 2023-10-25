@@ -3,6 +3,29 @@
 #include "SharedEnv.h"
 #include "ActionModel.h"
 
+struct AstarNode
+{
+    int location;
+    int direction;
+    int f,g,h;
+    AstarNode* parent;
+    int t = 0;
+    bool closed = false;
+    AstarNode(int _location,int _direction, int _g, int _h, AstarNode* _parent):
+            location(_location), direction(_direction),f(_g+_h),g(_g),h(_h),parent(_parent) {}
+    AstarNode(int _location,int _direction, int _g, int _h, int _t, AstarNode* _parent):
+            location(_location), direction(_direction),f(_g+_h),g(_g),h(_h),t(_t),parent(_parent) {}
+};
+
+struct cmp
+{
+    bool operator()(AstarNode* a, AstarNode* b)
+    {
+        if(a->f == b->f) return a->g <= b->g;
+        else return a->f > b->f;
+    }
+};
+
 struct SIPPNode {
     int arrive_time;
     int arrive_dir;
@@ -14,6 +37,16 @@ struct SIPPNode {
     SIPPNode(int _arrive_time,pair<int,int> _safe_interval,int _f, int _g, int _h, int _parent,int _location,int _arrive_dir,int _current_interval_next_pos):
             arrive_time(_arrive_time),safe_interval(_safe_interval),f(_f),g(_g),h(_h),parent(_parent),location(_location),arrive_dir(_arrive_dir),current_interval_next_pos(_current_interval_next_pos) {} ;
 };
+
+struct SIPP_cmp
+{
+    bool operator()(SIPPNode a, SIPPNode b)
+    {
+        if(a.f == b.f) return a.g <= b.g;
+        else return a.f > b.f;
+    }
+};
+
 class MAPFPlanner
 {
 public:
@@ -38,32 +71,29 @@ public:
 
     // End kit dummy implementation
 
+    int* agents_index;
     int* priority_order;
     int* agent_path_index;
     int RHCR_w; //The time interval that we want to resolve collisions
     int RHCR_h; //planning interval
-
     bool replan_flag; //One flag that indicates replanning when there are new tasks
+
+    vector<int> map;
+    vector<int> index;
+    vector<int>* occupy_id;  // use to record after this interval, which agent comes. End with -1
     
     vector<pair<int,int>>* agents_path;
     vector<pair<int,int>>* safe_intervals;
     vector<pair<int,int>>* original_intervals;
-
-    vector<int>* occupy_id;  // use to record after this interval, which agent comes. End with -1
-
     vector<pair<int,int>>* last_move_pos;
     vector<pair<int,int>>* ori_last_move_pos;
-    int* agents_index;
-    std::vector<int> map;
-    std::vector<int> index;
 
     void map_index_to_vec_index(int map_h, int map_w, int &vec_index);
     void vec_index_to_map_index(int &map_h, int &map_w, int vec_index);
     
     bool decide_when_to_plan(int current_timestep, int RGCR_h);
-    vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval,bool* find_flag, int agent_id);
+    vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end, vector<pair<int,int>>* safe_interval, bool* find_flag, int agent_id);
     pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time,int* rtn_index);
-    vector<SIPPNode> SIPP_get_neighbor(SIPPNode* sipp_node,vector<pair<int,int>>* last_move_pos,vector<pair<int,int>>* safe_intervals,int end);
 
     void insert_safe_intervals(int location, int time);
     void SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id);
