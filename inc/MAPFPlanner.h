@@ -3,29 +3,6 @@
 #include "SharedEnv.h"
 #include "ActionModel.h"
 
-struct AstarNode
-{
-    int location;
-    int direction;
-    int f,g,h;
-    AstarNode* parent;
-    int t = 0;
-    bool closed = false;
-    AstarNode(int _location,int _direction, int _g, int _h, AstarNode* _parent):
-            location(_location), direction(_direction),f(_g+_h),g(_g),h(_h),parent(_parent) {}
-    AstarNode(int _location,int _direction, int _g, int _h, int _t, AstarNode* _parent):
-            location(_location), direction(_direction),f(_g+_h),g(_g),h(_h),t(_t),parent(_parent) {}
-};
-
-struct cmp
-{
-    bool operator()(AstarNode* a, AstarNode* b)
-    {
-        if(a->f == b->f) return a->g <= b->g;
-        else return a->f > b->f;
-    }
-};
-
 struct SIPPNode {
     int arrive_time;
     int arrive_dir;
