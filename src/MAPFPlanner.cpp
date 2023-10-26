@@ -236,64 +236,51 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 {
 
     int current_time = env->curr_timestep;
-    bool flag = decide_when_to_plan(current_time,RHCR_h);
-    if (flag){
-        cout<<"true"<<endl;
+    bool replan_all_flag = decide_when_to_plan(current_time,RHCR_h);
+    if (replan_all_flag){
+        cout<<"Time to replan all agents ! "<<endl;
     }
     else{
-        cout<<"false"<<endl;
+        cout<<"Not time to replan all agets ! "<<endl;
     }
     actions = vector<Action>(env->curr_states.size(), Action::W);
     cout<<"replan flag "<<replan_flag<<endl;
-    if (env->curr_timestep<4965) {
-
-    }
-    else if (flag==true) {
-
+    if (env->curr_timestep<4950) {
+        // leave empty for testing
+    } else if (replan_all_flag==true) {
         safe_intervals = new vector<pair<int,int>>[env->rows*env->cols];
         last_move_pos = new vector<pair<int,int>>[env->rows*env->cols];
+
         for (int i = 0; i < env->rows*env->cols; ++i) {
-            pair<int, int> initial_interval;
-            pair<int, int> initial_lastmove;
-            initial_interval.first = 0;
-            initial_interval.second = 100000;
-            initial_lastmove.first = -1;
-            initial_lastmove.second = -1;
-            safe_intervals[i].push_back(initial_interval);
-            last_move_pos[i].push_back(initial_lastmove);
+            // initialize safe_intervals
+            safe_intervals[i].push_back(make_pair(1, 100000));
+            // initialize last_move_pos
+            last_move_pos[i].push_back(make_pair(-1, -1));
         }
+
         vector<int> vec_data;
+
         for (int i = 0; i < env->num_of_agents; ++i) {
             vec_data.push_back(priority_order[i]);
             index = argsort(vec_data);
         }
 
         for (int i = 0; i < env->num_of_agents; i++) {
-
             int current_agent = index[i];
-            int current_orientation = env->curr_states[current_agent].orientation;
             int current_position = env->curr_states[current_agent].location;
-            int goal_location = env->goal_locations[current_agent].front().first;
             int current_map_h = -1;
             int current_map_w = -1;
             cout << "current agent: " << current_agent << endl;
             cout << "Begin the planning of an agent" << endl;
-            //cout<<env->curr_states[current_agent].location<<endl;
-            //cout<<env->curr_states[current_agent].orientation<<endl;
+
             vec_index_to_map_index(current_map_h, current_map_w, current_position);
             vector<pair<int, int>> path;
             agent_path_index[current_agent] = agent_path_index[current_agent] + 1;
             insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep);
             if (env->goal_locations[current_agent].empty()) {
-
-                //path.push_back({env->curr_states[i].location, env->curr_states[i].orientation});
                 agents_path[current_agent].push_back(
                         {env->curr_states[current_agent].location, env->curr_states[current_agent].orientation});
             } else {
-                //cout<<"Begin to use A star"<<endl;
-                //path = single_agent_plan(env->curr_states[current_agent].location,
-                //env->curr_states[current_agent].orientation,
-                //env->goal_locations[current_agent].front().first);
                 cout << "Begin to use SIPP" << endl;
                 bool find_flag = false;
                 path = single_agent_plan_SIPP(env->curr_states[current_agent].location,
@@ -341,10 +328,10 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 
             cout<<"current agent: "<<current_agent<<endl;
             cout<<"step: "<<current_timestep<<endl;
-            cout<<agents_path[current_agent][current_timestep].first<<endl;
-            cout<<env->curr_states[current_agent].location<<endl;
-            cout<<agents_path[current_agent][current_timestep].second<<endl;
-            cout<<env->curr_states[current_agent].orientation<<endl;
+            cout<<"position on the planned path: "<<agents_path[current_agent][current_timestep].first<<endl;
+            cout<<"actual position on the map: "<<env->curr_states[current_agent].location<<endl;
+            cout<<"direction on the planned path: "<<agents_path[current_agent][current_timestep].second<<endl;
+            cout<<"actual direction on the map: "<<env->curr_states[current_agent].orientation<<endl;
             if (current_timestep>=agents_path[current_agent].size()-1 or current_timestep==0){
                 actions[current_agent] = Action::W;
                 continue;
@@ -393,6 +380,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                 }
                 else
                 {
+
                     cout<<"The agent number "<<current_agent<<endl;
                     //cout<<"Begin to use A star"<<endl;
                     //path = single_agent_plan(env->curr_states[current_agent].location,
@@ -456,10 +444,10 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 
             cout<<"current agent: "<<current_agent<<endl;
             cout<<"step: "<<current_timestep<<endl;
-            cout<<agents_path[current_agent][current_timestep].first<<endl;
-            cout<<env->curr_states[current_agent].location<<endl;
-            cout<<agents_path[current_agent][current_timestep].second<<endl;
-            cout<<env->curr_states[current_agent].orientation<<endl;
+            cout<<"position on the planned path: "<<agents_path[current_agent][current_timestep].first<<endl;
+            cout<<"actual position on the map: "<<env->curr_states[current_agent].location<<endl;
+            cout<<"direction on the planned path: "<<agents_path[current_agent][current_timestep].second<<endl;
+            cout<<"actual direction on the map: "<<env->curr_states[current_agent].orientation<<endl;
             if (current_timestep>=agents_path[current_agent].size()-1 or current_timestep==0){
                 actions[current_agent]=Action::W;
                 continue;
@@ -618,6 +606,26 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
         int objects_num = SIPP_node_list_copy.size();
 
         for (int i=0;i<4;i++) {
+            if (location<env->cols){
+                if (i==3){
+                    continue;
+                }
+            }
+            else if (location>=env->cols*(env->rows-1)){
+                if (i==1){
+                    continue;
+                }
+            }
+            else if (location%env->cols==0){
+                if (i==2){
+                    continue;
+                }
+            }
+            else if ((location+1)%env->cols==0){
+                if (i==0){
+                    continue;
+                }
+            }
             int check_candidate = candidates[i];
             if (sipp_node->arrive_dir == i) {
                 minimum_rot_step[i] = 0;

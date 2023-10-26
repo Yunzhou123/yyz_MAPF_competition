@@ -61,9 +61,7 @@ public:
     
     vector<pair<int,int>>* agents_path;
     vector<pair<int,int>>* safe_intervals;
-    vector<pair<int,int>>* original_intervals;
     vector<pair<int,int>>* last_move_pos;
-    vector<pair<int,int>>* ori_last_move_pos;
 
     void map_index_to_vec_index(int map_h, int map_w, int &vec_index);
     void vec_index_to_map_index(int &map_h, int &map_w, int vec_index);
