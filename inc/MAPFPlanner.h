@@ -51,9 +51,11 @@ public:
     int* agents_index;
     int* priority_order;
     int* agent_path_index;
+    int* corrupt_last_pos;
     int RHCR_w; //The time interval that we want to resolve collisions
     int RHCR_h; //planning interval
     bool replan_flag; //One flag that indicates replanning when there are new tasks
+    bool plan_first_time_flag;
 
     vector<int> map;
     vector<int> index;
@@ -70,7 +72,7 @@ public:
     vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end, vector<pair<int,int>>* safe_interval, bool* find_flag, int agent_id);
     pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time,int* rtn_index);
 
-    void insert_safe_intervals(int location, int time);
+    void insert_safe_intervals(int location, int time,int last_pos,int agent_id);
     void SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id);
 };
 

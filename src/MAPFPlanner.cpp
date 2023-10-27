@@ -89,13 +89,16 @@ void MAPFPlanner::initialize(int preprocess_time_limit)
     RHCR_w = 18;
     RHCR_h = 15;
     replan_flag = false;
+    plan_first_time_flag= true;
     agents_path = new vector<pair<int,int>>[env->num_of_agents];
     agents_index = new int [env->num_of_agents];
+    corrupt_last_pos=new int [env->num_of_agents];
     this->occupy_id = new vector<int>[env->rows * env->cols];
 
     for (int i = 0; i < env->num_of_agents; ++i) {
         cout << priority_order[i] << endl;
         agents_index[i]=0;
+        corrupt_last_pos[i]=-1;
     }
 
     safe_intervals = new vector<pair<int,int>>[env->rows*env->cols];
@@ -153,7 +156,7 @@ bool MAPFPlanner::decide_when_to_plan(int current_timestep,int RHCR_h){
     return flag;
 }
 
-void MAPFPlanner::insert_safe_intervals(int location, int time){
+void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int agent_id){
 
     vector<pair<int,int>> current_safe_intervals = safe_intervals[location];
     vector<pair<int,int>> current_last_pos = last_move_pos[location];
@@ -166,6 +169,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time){
     if (time < current_safe_intervals[0].first) {
         if (time == current_safe_intervals[0].first-1) {
             current_safe_intervals[0].first = time;
+            current_last_pos[0].first=last_pos;
         }
         else {
             current_safe_intervals.insert(current_safe_intervals.begin(), make_pair(time,time));
@@ -216,6 +220,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time){
         }
         if (time == current_safe_intervals[index_num].second+1 and time == current_safe_intervals[index_num+1].first-1) {
             current_safe_intervals[index_num].second = current_safe_intervals[index_num+1].second;
+            current_last_pos[index_num].second=current_last_pos[index_num+1].second;
             current_safe_intervals.erase(current_safe_intervals.begin()+index_num+1);
             current_last_pos.erase(current_last_pos.begin()+index_num+1);
         }
@@ -224,9 +229,17 @@ void MAPFPlanner::insert_safe_intervals(int location, int time){
         }
         else if (time==current_safe_intervals[index_num].second+1) {
             current_safe_intervals[index_num].second=time;
+            if (index_num<intervals_num-1){
+                current_last_pos[index_num].second=corrupt_last_pos[agent_id];
+            }
+            else{
+                current_last_pos[index_num].second=last_pos;
+            }
+
         }
         else if (time==current_safe_intervals[index_num+1].first-1) {
             current_safe_intervals[index_num+1].first=time;
+            current_last_pos[index_num+1].first=last_pos;
         }
         else {
             current_safe_intervals.insert(current_safe_intervals.begin()+index_num+1, make_pair(time,time));
@@ -251,7 +264,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
     }
     actions = vector<Action>(env->curr_states.size(), Action::W);
     cout<<"replan flag "<<replan_flag<<endl;
-    if (env->curr_timestep<4950) {
+    if (env->curr_timestep>200) {
         // leave empty for testing
     } else if (replan_all_flag==true) {
         safe_intervals = new vector<pair<int,int>>[env->rows*env->cols];
@@ -282,7 +295,13 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
             vec_index_to_map_index(current_map_h, current_map_w, current_position);
             vector<pair<int, int>> path;
             agent_path_index[current_agent] = agent_path_index[current_agent] + 1;
-            insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep);
+            if (plan_first_time_flag== true){
+                insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep,-1,current_agent);
+            }
+            else{
+                insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep,agents_path[current_agent][agents_path[current_agent].size()-2].first,current_agent);
+            }
+
             if (env->goal_locations[current_agent].empty()) {
                 agents_path[current_agent].push_back(
                         {env->curr_states[current_agent].location, env->curr_states[current_agent].orientation});
@@ -324,6 +343,9 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                 }
             }
         }
+        if (plan_first_time_flag== true){
+            plan_first_time_flag= false;
+        }
 
     }
     else if (replan_flag) {
@@ -364,7 +386,15 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
             int current_agent=index[i];
             if (agents_index[current_agent]==0) {
                 cout<<"insert intervals"<<endl;
-                insert_safe_intervals(env->curr_states[current_agent].location,env->curr_timestep);
+                for (int p=0;p<safe_intervals[env->curr_states[current_agent].location].size();p++){
+                    cout<<safe_intervals[env->curr_states[current_agent].location][p].first<<","<<safe_intervals[env->curr_states[current_agent].location][p].second<<endl;
+
+                }
+                for (int p=0;p<last_move_pos[env->curr_states[current_agent].location].size();p++){
+                    cout<<last_move_pos[env->curr_states[current_agent].location][p].first<<","<<last_move_pos[env->curr_states[current_agent].location][p].second<<endl;
+
+                }
+                insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep,agents_path[current_agent][agents_path[current_agent].size()-2].first,current_agent);
                 cout<<"replanning!"<<endl;
 
                 int current_position=env->curr_states[current_agent].location;
@@ -796,6 +826,7 @@ list<pair<int,int>> MAPFPlanner::getNeighbors(int location,int direction) {
 void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id) {
     vector<int> last_position_list;
     last_position_list.push_back(-1);
+    corrupt_last_pos[agent_id]=-1;
     for (int i = 0; i < RHCR_w; i++) {
 
         int location;
@@ -815,6 +846,9 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
         int rtn_index;
 
         compute_current_interval(safe_intervals[location],current_time_step,&rtn_index);
+        if (i==agent_planned_path.size()-1){
+            corrupt_last_pos[agent_id]=safe_intervals[location][rtn_index].second;
+        }
         if (current_time_step==safe_intervals[location][rtn_index].first) {
 
             safe_intervals[location][rtn_index].first = safe_intervals[location][rtn_index].first + 1;
