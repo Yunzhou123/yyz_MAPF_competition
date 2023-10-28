@@ -229,8 +229,14 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
         }
         else if (time==current_safe_intervals[index_num].second+1) {
             current_safe_intervals[index_num].second=time;
-            if (index_num<intervals_num-1){
+            if (index_num==intervals_num-1){
                 current_last_pos[index_num].second=corrupt_last_pos[agent_id];
+            }
+            else{
+                current_last_pos[index_num].second=current_last_pos[index_num+1].first;
+            }
+            if (index_num<intervals_num-1){
+
             }
             else{
                 current_last_pos[index_num].second=last_pos;
@@ -264,7 +270,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
     }
     actions = vector<Action>(env->curr_states.size(), Action::W);
     cout<<"replan flag "<<replan_flag<<endl;
-    if (env->curr_timestep>200) {
+    if (env->curr_timestep>300) {
         // leave empty for testing
     } else if (replan_all_flag==true) {
         safe_intervals = new vector<pair<int,int>>[env->rows*env->cols];
@@ -852,7 +858,12 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
         if (current_time_step==safe_intervals[location][rtn_index].first) {
 
             safe_intervals[location][rtn_index].first = safe_intervals[location][rtn_index].first + 1;
-            last_move_pos[location][rtn_index].first = last_position;
+            if (rtn_index>=1){
+                if (current_time_step==safe_intervals[location][rtn_index-1].second+2){
+                    last_move_pos[location][rtn_index].first = last_position;
+                }
+            }
+
 
             if (safe_intervals[location][rtn_index].first > safe_intervals[location][rtn_index].second) {
                 safe_intervals[location].erase(safe_intervals[location].begin() + rtn_index);
@@ -872,10 +883,11 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
             }
 
         } else {
+            int original_first_pos=last_move_pos[location][rtn_index].first;
             int original_last_pos=last_move_pos[location][rtn_index].second;
             pair<int, int> new_interval_1 = make_pair(safe_intervals[location][rtn_index].first, current_time_step-1);
             pair<int, int> new_interval_2 = make_pair(current_time_step + 1, safe_intervals[location][rtn_index].second);
-            pair<int, int> last_pos_interval_1 = make_pair(-1, last_position);
+            pair<int, int> last_pos_interval_1 = make_pair(original_first_pos, last_position);
             pair<int, int> last_pos_interval_2 = make_pair(last_position, original_last_pos);
             safe_intervals[location].erase(safe_intervals[location].begin()+rtn_index);
             last_move_pos[location].erase(last_move_pos[location].begin()+rtn_index);
