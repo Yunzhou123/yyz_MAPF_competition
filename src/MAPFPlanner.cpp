@@ -255,7 +255,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
 
 
 
-            
+
 
         }
         else if (time==current_safe_intervals[index_num+1].first-1) {
@@ -548,7 +548,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
         cout<<"safe interval at the start location: "<<current_interval[r].first<<","<<current_interval[r].second<<endl;
         cout<<"starting time: "<< start_time<<endl;
     }
-    // pair<int,int> current_safe_interval = compute_current_interval(current_interval,start_time, &rtn_index);
+    pair<int,int> current_safe_interval = compute_current_interval(current_interval,start_time, &rtn_index);
 
     int maximum_timestep = 100000;
     priority_queue<SIPPNode,vector<SIPPNode>,SIPP_cmp> open_list;
