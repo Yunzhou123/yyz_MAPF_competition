@@ -51,7 +51,6 @@ public:
     int* agents_index;
     int* priority_order;
     int* agent_path_index;
-    int* corrupt_last_pos;
     int RHCR_w; //The time interval that we want to resolve collisions
     int RHCR_h; //planning interval
     bool replan_flag; //One flag that indicates replanning when there are new tasks
