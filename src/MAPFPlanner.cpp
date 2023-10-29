@@ -251,6 +251,12 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
                 current_last_pos[index_num].second=last_pos;
             }
 
+
+
+
+
+            
+
         }
         else if (time==current_safe_intervals[index_num+1].first-1) {
             current_safe_intervals[index_num+1].first=time;
