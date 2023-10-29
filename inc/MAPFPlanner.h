@@ -59,7 +59,7 @@ public:
 
     vector<int> map;
     vector<int> index;
-    vector<int>* occupy_id;  // use to record after this interval, which agent comes. End with -1
+    vector<int>* occupy_id;  // use to record after the i-th safe interval, which agent comes. Start with -1 if the safe interval starts from 0. End with -1
     
     vector<pair<int,int>>* agents_path;
     vector<pair<int,int>>* safe_intervals;
