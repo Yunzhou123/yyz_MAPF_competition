@@ -177,7 +177,8 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
                 current_possession.insert(current_possession.begin(), -1);
             }
             else{
-                //have some trouble updating the current_possession
+                //have some trouble updating the current_possession, right now just assign it to -1
+                current_possession.insert(current_possession.begin(), -1);
             }
         }
     }
@@ -239,6 +240,8 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
         }
         else if (time==current_safe_intervals[index_num].second+1) {
             current_safe_intervals[index_num].second=time;
+            //have some trouble updating current possession
+
             if (index_num==intervals_num-1){
             }
             else{
@@ -251,12 +254,6 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
                 current_last_pos[index_num].second=last_pos;
             }
 
-
-
-
-
-
-
         }
         else if (time==current_safe_intervals[index_num+1].first-1) {
             current_safe_intervals[index_num+1].first=time;
@@ -266,6 +263,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
             current_safe_intervals.insert(current_safe_intervals.begin()+index_num+1, make_pair(time,time));
             current_last_pos.insert(current_last_pos.begin()+index_num+1, make_pair(-1,-1));
             //have some trouble updating current possession
+            current_possession.insert(current_possession.begin()+index_num+2, -1);
         }
     }
     safe_intervals[location] = current_safe_intervals;
