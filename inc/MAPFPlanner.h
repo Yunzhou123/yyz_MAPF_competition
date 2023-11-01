@@ -70,8 +70,10 @@ public:
     bool decide_when_to_plan(int current_timestep, int RGCR_h);
     vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end, vector<pair<int,int>>* safe_interval, bool* find_flag, int agent_id);
     pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time,int* rtn_index);
+    vector<pair<int,int>> single_agent_plan_SIPP_with_constraints(int start, int start_direct, int end, vector<pair<int,int>>* safe_interval, bool* find_flag, int agent_id,std::vector<std::vector<std::vector<int>>> constraints);
 
     void insert_safe_intervals(int location, int time,int last_pos,int agent_id);
     void SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id);
+    vector<int>*  generate_random_constraint();
 };
 
