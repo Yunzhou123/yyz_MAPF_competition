@@ -166,7 +166,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
         if (time == current_safe_intervals[0].first-1) {
             current_safe_intervals[0].first = time;
             current_last_pos[0].first=last_pos;
-            //updating current_possession
+            //updating current_pos
             if(time == 0){
                 current_possession[0] = -1;
             }
@@ -241,7 +241,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
         }
         else if (time==current_safe_intervals[index_num].second+1) {
             current_safe_intervals[index_num].second=time;
-            //have some trouble updating current possession
+            //have some trouble updating current possession, needs to fix
 
             if (index_num==intervals_num-1){
             }
@@ -1163,6 +1163,7 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
         int last_position=last_position_list[last_position_list.size()-2];
         int current_time_step=env->curr_timestep+i;
         int rtn_index;
+        int intervals_num=safe_intervals[location].size();
 
         compute_current_interval(safe_intervals[location],current_time_step,&rtn_index);
         if (current_time_step==safe_intervals[location][rtn_index].first) {
@@ -1186,6 +1187,12 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
             safe_intervals[location][rtn_index].second = safe_intervals[location][rtn_index].second - 1;
             last_move_pos[location][rtn_index].second = last_position;
             occupy_id[location][rtn_index+1] = agent_id;
+            if (rtn_index<intervals_num-1){
+                if (safe_intervals[location][rtn_index+1].first-safe_intervals[location][rtn_index].second>=2){
+                    last_move_pos[location][rtn_index+1].first = last_position;
+                }
+
+            }
 
             if (safe_intervals[location][rtn_index].first > safe_intervals[location][rtn_index].second) {
                 safe_intervals[location].erase(safe_intervals[location].begin() + rtn_index);
