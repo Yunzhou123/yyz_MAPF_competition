@@ -1032,6 +1032,9 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
                 } else if (current_interval.second<minimum_leave_time+1) {
                     continue;
                 }
+                else if (current_interval.second==current_interval.first+1){
+                    continue;
+                }
                 int t = max(minimum_leave_time+1,current_interval.first);
 
                 SIPPNode new_node = SIPPNode(t, current_interval, t+getManhattanDistance(check_candidate, end), t, getManhattanDistance(check_candidate, end),
