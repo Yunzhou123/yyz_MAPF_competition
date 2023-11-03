@@ -2,6 +2,8 @@
 #include <random>
 #include <algorithm>
 #include <chrono>
+#include <iostream>
+#include <fstream>
 using namespace std::chrono;
 int a=1+1;
 
@@ -93,7 +95,7 @@ void MAPFPlanner::initialize(int preprocess_time_limit)
     plan_first_time_flag= true;
     agents_path = new vector<pair<int,int>>[env->num_of_agents];
     agents_index = new int [env->num_of_agents];
-    this->occupy_id = new vector<int>[env->rows * env->cols];
+    this->occupy_id = new vector<pair<int,int>>[env->rows*env->cols];
 
     safe_intervals = new vector<pair<int,int>>[env->rows*env->cols];
     last_move_pos = new vector<pair<int,int>>[env->rows*env->cols];
@@ -108,8 +110,7 @@ void MAPFPlanner::initialize(int preprocess_time_limit)
 
         safe_intervals[i].push_back(initial_interval);
         last_move_pos[i].push_back(initial_lastmove);
-        this->occupy_id[i].push_back(-1);  
-        this->occupy_id[i].push_back(-1); // initial: occupy_id[i] = <-1, -1>
+        this->occupy_id[i].push_back(make_pair(-1,-1));
     }
     
     cout << env->map.size() << endl;
@@ -155,7 +156,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
 
     vector<pair<int,int>> current_safe_intervals = safe_intervals[location];
     vector<pair<int,int>> current_last_pos = last_move_pos[location];
-    vector<int> current_possession = occupy_id[location];
+    vector<pair<int, int>> current_possession = occupy_id[location];
     int intervals_num = current_safe_intervals.size();
     int low_index = 0;
     int high_index = intervals_num-1;
@@ -167,19 +168,17 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
             current_safe_intervals[0].first = time;
             current_last_pos[0].first=last_pos;
             //updating current_pos
-            if(time == 0){
-                current_possession[0] = -1;
-            }
+            current_possession[0].first=agent_id;
         }
         else {
             current_safe_intervals.insert(current_safe_intervals.begin(), make_pair(time,time));
             current_last_pos.insert(current_last_pos.begin(), make_pair(-1,-1));
             if(time == 0){
-                current_possession.insert(current_possession.begin(), -1);
+                current_possession.insert(current_possession.begin(), make_pair(-1,-1));
             }
             else{
                 //have some trouble updating the current_possession, right now just assign it to -1
-                current_possession.insert(current_possession.begin(), -1);
+                current_possession.insert(current_possession.begin(), make_pair(-1,-1));
             }
         }
     }
@@ -232,6 +231,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
         if (time == current_safe_intervals[index_num].second+1 and time == current_safe_intervals[index_num+1].first-1) {
             current_safe_intervals[index_num].second = current_safe_intervals[index_num+1].second;
             current_last_pos[index_num].second=current_last_pos[index_num+1].second;
+            current_possession[index_num].second=current_possession[index_num+1].second;
             current_safe_intervals.erase(current_safe_intervals.begin()+index_num+1);
             current_last_pos.erase(current_last_pos.begin()+index_num+1);
             current_possession.erase(current_possession.begin()+index_num+1);
@@ -247,24 +247,27 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
             }
             else{
                 current_last_pos[index_num].second=current_last_pos[index_num+1].first;
+                current_possession[index_num].second=current_possession[index_num+1].second;
             }
             if (index_num<intervals_num-1){
 
             }
             else{
                 current_last_pos[index_num].second=last_pos;
+                current_possession[index_num].second=agent_id;
             }
 
         }
         else if (time==current_safe_intervals[index_num+1].first-1) {
             current_safe_intervals[index_num+1].first=time;
             current_last_pos[index_num+1].first=last_pos;
+            current_possession[index_num+1].first=agent_id;
         }
         else {
             current_safe_intervals.insert(current_safe_intervals.begin()+index_num+1, make_pair(time,time));
             current_last_pos.insert(current_last_pos.begin()+index_num+1, make_pair(-1,-1));
             //have some trouble updating current possession
-            current_possession.insert(current_possession.begin()+index_num+2, -1);
+            current_possession.insert(current_possession.begin()+index_num+1, make_pair(-1,-1));
         }
     }
     safe_intervals[location] = current_safe_intervals;
@@ -274,6 +277,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
 /// plan and refine the paths, and generate actions for each agent
 void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 {
+
     auto program_start_time = high_resolution_clock::now();
     int current_time = env->curr_timestep;
     bool replan_all_flag = decide_when_to_plan(current_time,RHCR_h);
@@ -304,15 +308,14 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
         safe_intervals = new vector<pair<int,int>>[env->rows*env->cols];
         last_move_pos = new vector<pair<int,int>>[env->rows*env->cols];
         delete []occupy_id;
-        occupy_id = new vector<int>[env->rows*env->cols];
+        occupy_id = new vector<pair<int,int>>[env->rows*env->cols];
 
         for (int i = 0; i < env->rows*env->cols; ++i) {
             // initialize safe_intervals
             safe_intervals[i].push_back(make_pair(1, 100000));
             // initialize last_move_pos
             last_move_pos[i].push_back(make_pair(-1, -1));
-            this->occupy_id[i].push_back(-1);  
-            this->occupy_id[i].push_back(-1); // initial: occupy_id[i] = <-1, -1>
+            this->occupy_id[i].push_back(make_pair(-1,-1)); // initial: occupy_id[i] = <-1, -1>
         }
 
         vector<int> vec_data;
@@ -346,14 +349,23 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
             } else {
                 cout << "Begin to use SIPP" << endl;
                 bool find_flag = false;
+                vector<int> related_agents;
                 path = single_agent_plan_SIPP_with_constraints(env->curr_states[current_agent].location,
                                               env->curr_states[current_agent].orientation,
                                               env->goal_locations[current_agent].front().first, safe_intervals,
-                                              &find_flag, current_agent,constraints);
-                if (find_flag) {
+                                              &find_flag, current_agent,constraints,&related_agents);
+                if (find_flag== true) {
+
                     agents_index[current_agent] = 1;
                 }
                 else {
+                    std::ofstream myfile ("/home/joe-yan/Desktop/Yunzhou123-main/text_files/example.txt");
+                    if (myfile.is_open())
+                    {
+                        myfile <<std::to_string(related_agents.size())<< "\n";
+
+                    }
+                    myfile.close();
                     agents_index[current_agent] = 0;
                 }
 
@@ -462,12 +474,21 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                     //env->goal_locations[current_agent].front().first);
                     cout<<"Begin to use SIPP"<<endl;
                     bool find_flag = false;
+                    vector<int> related_agents;
                     path = single_agent_plan_SIPP_with_constraints(env->curr_states[current_agent].location,
                                                 env->curr_states[current_agent].orientation,
-                                                env->goal_locations[current_agent].front().first,safe_intervals,&find_flag, current_agent,constraints);
-                    if (find_flag) {
+                                                env->goal_locations[current_agent].front().first,safe_intervals,&find_flag, current_agent,constraints,&related_agents);
+                    if (find_flag==true) {
+
                         agents_index[current_agent] = 1;
                     } else {
+                        std::ofstream myfile ("/home/joe-yan/Desktop/Yunzhou123-main/text_files/example.txt");
+                        if (myfile.is_open())
+                        {
+                            myfile <<std::to_string(related_agents.size())<< "\n";
+
+                        }
+                        myfile.close();
                         agents_index[current_agent] = 0;
                     }
                     agents_path[current_agent] = path;
@@ -545,6 +566,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
             agents_index[current_agent]=agents_index[current_agent]+1;
         }
     }
+
   return;
 }
 
@@ -560,6 +582,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
         cout<<"starting time: "<< start_time<<endl;
     }
     pair<int,int> current_safe_interval = compute_current_interval(current_interval,start_time, &rtn_index);
+    int next_agent_id=occupy_id[start][rtn_index].second;
 
     int maximum_timestep = 100000;
     priority_queue<SIPPNode,vector<SIPPNode>,SIPP_cmp> open_list;
@@ -570,7 +593,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
     unordered_set<int> close_list;
     unordered_set<int> all_nodes_set;
     SIPPNode initial_node = SIPPNode(start_time+0, current_safe_interval, getManhattanDistance(start, end), 0, getManhattanDistance(start, end),
-                                   -1,start,start_direct,last_move_pos[start][0].second);
+                                   -1,start,start_direct,last_move_pos[start][0].second,next_agent_id);
     open_list.push(initial_node);
     all_nodes[maximum_timestep*0+4*start+start_direct] = &initial_node;
     close_list.insert(maximum_timestep*0+4*start+start_direct);
@@ -751,9 +774,10 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
                     continue;
                 }
                 int t = max(minimum_leave_time+1,current_interval.first);
+                int next_agent_id=occupy_id[check_candidate][j].second;
 
                 SIPPNode new_node = SIPPNode(t, current_interval, t+getManhattanDistance(check_candidate, end), t, getManhattanDistance(check_candidate, end),
-                                           objects_num-1,check_candidate,i,last_move_pos[check_candidate][j].second);
+                                           objects_num-1,check_candidate,i,last_move_pos[check_candidate][j].second,next_agent_id);
 
                 insert_key = j*maximum_timestep+4*new_node.location+new_node.arrive_dir;
                 auto found = close_list.find(insert_key);
@@ -808,9 +832,10 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP(int start, int start_d
 }
 
 
-vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval, bool* find_flag,int agent_id, std::vector<std::vector<std::vector<int>>> constraints) {
+vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int start, int start_direct, int end,vector<pair<int,int>>* safe_interval, bool* find_flag,int agent_id, std::vector<std::vector<std::vector<int>>> constraints,vector<int>* related_agents) {
 
     int start_time=env->curr_timestep;
+    vector<int> current_related_agents=*related_agents;
     vector<pair<int,int>> path;
     vector<pair<int,int>> current_interval=safe_intervals[start];
     int rtn_index;
@@ -820,6 +845,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
         cout<<"starting time: "<< start_time<<endl;
     }
     pair<int,int> current_safe_interval = compute_current_interval(current_interval,start_time, &rtn_index);
+    int next_agent_id=occupy_id[start][rtn_index].second;
 
     int maximum_timestep = 100000;
     priority_queue<SIPPNode,vector<SIPPNode>,SIPP_cmp> open_list;
@@ -830,7 +856,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
     unordered_set<int> close_list;
     unordered_set<int> all_nodes_set;
     SIPPNode initial_node = SIPPNode(start_time+0, current_safe_interval, getManhattanDistance(start, end), 0, getManhattanDistance(start, end),
-                                     -1,start,start_direct,last_move_pos[start][0].second);
+                                     -1,start,start_direct,last_move_pos[start][0].second,next_agent_id);
     open_list.push(initial_node);
     all_nodes[maximum_timestep*0+4*start+start_direct] = &initial_node;
     close_list.insert(maximum_timestep*0+4*start+start_direct);
@@ -844,6 +870,9 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             break;
         }
         SIPPNode curr_node = open_list.top();
+        if (curr_node.next_agent_id!=-1){
+            current_related_agents.push_back(curr_node.next_agent_id);
+        }
         //if (agent_id==0 or agent_id==4) {
         //   cout << safe_intervals[curr_node.location].size() << endl;
         //   cout << last_move_pos[curr_node.location].size() << endl;
@@ -1035,10 +1064,11 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
                 else if (current_interval.second==current_interval.first+1){
                     continue;
                 }
+                int next_agent_id=occupy_id[check_candidate][j].second;
                 int t = max(minimum_leave_time+1,current_interval.first);
 
                 SIPPNode new_node = SIPPNode(t, current_interval, t+getManhattanDistance(check_candidate, end), t, getManhattanDistance(check_candidate, end),
-                                             objects_num-1,check_candidate,i,last_move_pos[check_candidate][j].second);
+                                             objects_num-1,check_candidate,i,last_move_pos[check_candidate][j].second,next_agent_id);
 
                 insert_key = j*maximum_timestep+4*new_node.location+new_node.arrive_dir;
                 auto found = close_list.find(insert_key);
@@ -1088,7 +1118,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
 
         //}
     }
-
+    *related_agents=current_related_agents;
     return agent_interpolate_path;
 }
 
@@ -1175,6 +1205,7 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
             if (rtn_index>=1){
                 if (current_time_step==safe_intervals[location][rtn_index-1].second+2){
                     last_move_pos[location][rtn_index].first = last_position;
+                    occupy_id[location][rtn_index].first=agent_id;
                 }
             }
 
@@ -1182,17 +1213,18 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
             if (safe_intervals[location][rtn_index].first > safe_intervals[location][rtn_index].second) {
                 safe_intervals[location].erase(safe_intervals[location].begin() + rtn_index);
                 last_move_pos[location].erase(last_move_pos[location].begin() + rtn_index);
-                occupy_id[location].erase(occupy_id[location].begin() + rtn_index + 1);
+                occupy_id[location].erase(occupy_id[location].begin() + rtn_index );
             }
 
         } else if (current_time_step==safe_intervals[location][rtn_index].second) {
 
             safe_intervals[location][rtn_index].second = safe_intervals[location][rtn_index].second - 1;
             last_move_pos[location][rtn_index].second = last_position;
-            occupy_id[location][rtn_index+1] = agent_id;
+            occupy_id[location][rtn_index].second = agent_id;
             if (rtn_index<intervals_num-1){
                 if (safe_intervals[location][rtn_index+1].first-safe_intervals[location][rtn_index].second>=2){
                     last_move_pos[location][rtn_index+1].first = last_position;
+                    occupy_id[location][rtn_index+1].first = agent_id;
                 }
 
             }
@@ -1200,33 +1232,37 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
             if (safe_intervals[location][rtn_index].first > safe_intervals[location][rtn_index].second) {
                 safe_intervals[location].erase(safe_intervals[location].begin() + rtn_index);
                 last_move_pos[location].erase(last_move_pos[location].begin() + rtn_index);
-                occupy_id[location].erase(occupy_id[location].begin() + rtn_index + 1);
+                occupy_id[location].erase(occupy_id[location].begin() + rtn_index );
             }
 
         } else {
             int original_first_pos=last_move_pos[location][rtn_index].first;
             int original_last_pos=last_move_pos[location][rtn_index].second;
+            int original_first_agent=occupy_id[location][rtn_index].first;
+            int original_last_agent=occupy_id[location][rtn_index].second;
             pair<int, int> new_interval_1 = make_pair(safe_intervals[location][rtn_index].first, current_time_step-1);
             pair<int, int> new_interval_2 = make_pair(current_time_step + 1, safe_intervals[location][rtn_index].second);
             pair<int, int> last_pos_interval_1 = make_pair(original_first_pos, last_position);
             pair<int, int> last_pos_interval_2 = make_pair(last_position, original_last_pos);
+            pair<int, int> agent_id_interval_1 = make_pair(original_first_agent, agent_id);
+            pair<int, int> agent_id_interval_2 = make_pair(agent_id, original_last_agent);
             safe_intervals[location].erase(safe_intervals[location].begin()+rtn_index);
             last_move_pos[location].erase(last_move_pos[location].begin()+rtn_index);
-            int old_id = occupy_id[location][rtn_index+1];
-            occupy_id[location].erase(occupy_id[location].begin()+rtn_index+1);
+            int old_id = occupy_id[location][rtn_index].second;
+            occupy_id[location].erase(occupy_id[location].begin()+rtn_index);
             int sum_count = 0;
 
             if (new_interval_1.second >= new_interval_1.first) {
                 safe_intervals[location].insert(safe_intervals[location].begin()+rtn_index+sum_count,new_interval_1);
                 last_move_pos[location].insert(last_move_pos[location].begin()+rtn_index+sum_count,last_pos_interval_1);
-                occupy_id[location].insert(occupy_id[location].begin()+rtn_index+sum_count+1, agent_id);
+                occupy_id[location].insert(occupy_id[location].begin()+rtn_index+sum_count, agent_id_interval_1);
                 sum_count = sum_count+1;
             }
 
             if (new_interval_2.second >= new_interval_2.first) {
                 safe_intervals[location].insert(safe_intervals[location].begin()+rtn_index+sum_count,new_interval_2);
                 last_move_pos[location].insert(last_move_pos[location].begin()+rtn_index+sum_count,last_pos_interval_2);
-                occupy_id[location].insert(occupy_id[location].begin()+rtn_index+sum_count+1, old_id);
+                occupy_id[location].insert(occupy_id[location].begin()+rtn_index+sum_count, agent_id_interval_2);
             }
         }
     }

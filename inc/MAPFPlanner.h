@@ -11,10 +11,10 @@ struct SIPPNode {
     int f,g,h;
     int parent;
     int current_interval_next_pos;
-    SIPPNode(int _arrive_time,pair<int,int> _safe_interval,int _f, int _g, int _h, int _parent,int _location,int _arrive_dir,int _current_interval_next_pos):
-            arrive_time(_arrive_time),safe_interval(_safe_interval),f(_f),g(_g),h(_h),parent(_parent),location(_location),arrive_dir(_arrive_dir),current_interval_next_pos(_current_interval_next_pos) {} ;
+    int next_agent_id;
+    SIPPNode(int _arrive_time,pair<int,int> _safe_interval,int _f, int _g, int _h, int _parent,int _location,int _arrive_dir,int _current_interval_next_pos,int _agent_id):
+            arrive_time(_arrive_time),safe_interval(_safe_interval),f(_f),g(_g),h(_h),parent(_parent),location(_location),arrive_dir(_arrive_dir),current_interval_next_pos(_current_interval_next_pos),next_agent_id(_agent_id) {} ;
 };
-
 struct SIPP_cmp
 {
     bool operator()(SIPPNode a, SIPPNode b)
@@ -58,7 +58,7 @@ public:
 
     vector<int> map;
     vector<int> index;
-    vector<int>* occupy_id;  // use to record after the i-th safe interval, which agent comes. Start with -1 if the safe interval starts from 0. End with -1
+    vector<pair<int,int>>* occupy_id;  // use to record after the i-th safe interval, which agent comes. Start with -1 if the safe interval starts from 0. End with -1
     
     vector<pair<int,int>>* agents_path;
     vector<pair<int,int>>* safe_intervals;
@@ -70,7 +70,7 @@ public:
     bool decide_when_to_plan(int current_timestep, int RGCR_h);
     vector<pair<int,int>> single_agent_plan_SIPP(int start, int start_direct, int end, vector<pair<int,int>>* safe_interval, bool* find_flag, int agent_id);
     pair<int,int> compute_current_interval(vector<pair<int,int>> current_safe_intervals,int current_time,int* rtn_index);
-    vector<pair<int,int>> single_agent_plan_SIPP_with_constraints(int start, int start_direct, int end, vector<pair<int,int>>* safe_interval, bool* find_flag, int agent_id,std::vector<std::vector<std::vector<int>>> constraints);
+    vector<pair<int,int>> single_agent_plan_SIPP_with_constraints(int start, int start_direct, int end, vector<pair<int,int>>* safe_interval, bool* find_flag, int agent_id,std::vector<std::vector<std::vector<int>>> constraints,vector<int>* related_agents);
 
     void insert_safe_intervals(int location, int time,int last_pos,int agent_id);
     void SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id);
