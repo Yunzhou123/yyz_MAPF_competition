@@ -292,7 +292,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
     std::vector<std::vector<std::vector<int>>> constraints(env->cols*env->rows, std::vector<std::vector<int>>(4));
 
     //generate a random constraint, just for testing
-    int constraint_num=10;
+    int constraint_num=0;
     for (int i=0;i<constraint_num;i++) {
         int map_size=env->cols*env->rows;
         int direction_num=4;
@@ -1203,7 +1203,7 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
 
             safe_intervals[location][rtn_index].first = safe_intervals[location][rtn_index].first + 1;
             if (rtn_index>=1){
-                if (current_time_step==safe_intervals[location][rtn_index-1].second+2){
+                if (current_time_step==safe_intervals[location][rtn_index-1].second+2 ){
                     last_move_pos[location][rtn_index].first = last_position;
                     occupy_id[location][rtn_index].first=agent_id;
                 }
@@ -1222,7 +1222,7 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
             last_move_pos[location][rtn_index].second = last_position;
             occupy_id[location][rtn_index].second = agent_id;
             if (rtn_index<intervals_num-1){
-                if (safe_intervals[location][rtn_index+1].first-safe_intervals[location][rtn_index].second>=2){
+                if (safe_intervals[location][rtn_index+1].first-safe_intervals[location][rtn_index].second>=2 and i != agent_planned_path.size()-1){
                     last_move_pos[location][rtn_index+1].first = last_position;
                     occupy_id[location][rtn_index+1].first = agent_id;
                 }
