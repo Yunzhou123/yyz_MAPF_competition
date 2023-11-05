@@ -11,6 +11,7 @@ struct node_interval{
     node_interval(bool _is_safe,int _start_timestep,int _end_timestep,int _id, int _from_where):
             is_safe(_is_safe),start_timestep(_start_timestep),end_timestep(_end_timestep),id(_id),from_where(_from_where) {};
 };
+
 struct SIPPNode {
     int arrive_time;
     int arrive_dir;

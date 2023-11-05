@@ -41,6 +41,12 @@ node_interval MAPFPlanner::compute_current_interval(vector<node_interval> curren
     bool flag= false;
     node_interval* rtn_interval;
 
+
+    /* 
+        locate the current_time for the specifc interval in current_sata_intervals using binary search
+        The interval should be treated as [start_timestamp, end_timestamp] or [start_timestamp, end_timestamp)?
+    
+    */
     while (!flag){
 
         if ((current_time<=current_safe_intervals[check_index].end_timestep) and (current_time>=current_safe_intervals[check_index].start_timestep)) {
@@ -197,10 +203,14 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
     }
     else if (time==current_node_intervals[index_num].end_timestep){
         if (current_node_intervals[index_num+1].is_safe== true) {
-            current_node_intervals[index_num].end_timestep=current_node_intervals[index_num].end_timestep-1;
+            
+            // what if the current_node_intervals[index_num].start_timestep == current_node_intervals[index_num].end_timestep
+            current_node_intervals[index_num].end_timestep=current_node_intervals[index_num].end_timestep-1; 
+
             current_node_intervals[index_num+1].start_timestep=current_node_intervals[index_num+1].start_timestep-1;
         }
         else {
+            // same problem as above
             current_node_intervals[index_num].end_timestep=current_node_intervals[index_num].end_timestep-1;
             node_interval new_node=node_interval(true,time,time,-1,-1);
             current_node_intervals.insert(current_node_intervals.begin()+index_num+1,new_node);
@@ -231,6 +241,9 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
         int from_where_copy=current_node_intervals[index_num].from_where;
         int end_time_copy=current_node_intervals[index_num].end_timestep;
         current_node_intervals[index_num].end_timestep=time-1;
+        /*
+            should also update drom_where in the current_node_intervals[index_num]
+        */
         node_interval insert_node_1=node_interval(true,time,time,-1,-1);
         current_node_intervals.insert(current_node_intervals.begin()+index_num+1,insert_node_1);
         node_interval insert_node_2=node_interval(false,time+1,end_time_copy,id_copy,from_where_copy);
@@ -269,6 +282,10 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
     if (env->curr_timestep>300) {
         // leave empty for testing
     } else if (replan_all_flag==true) {
+        /*
+            should delete the old allocated space (otherwise will leave the job for the garbage collector)
+        */
+        delete []all_interval_nodes;
         all_interval_nodes=new vector<node_interval>[env->rows*env->cols];
         //safe_intervals = new vector<pair<int,int>>[env->rows*env->cols];
         //last_move_pos = new vector<pair<int,int>>[env->rows*env->cols];
@@ -547,7 +564,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
     int rtn_index;
     *find_flag=false;
     for (int r = 0; r<current_interval.size(); r++) {
-        cout<<"safe interval at the start location: "<<current_interval[r].start_timestep<<","<<current_interval[r].end_timestep<<endl;
+        cout<<"(non)safe interval at the start location: "<<current_interval[r].start_timestep<<","<<current_interval[r].end_timestep<<endl;
         cout<<"starting time: "<< start_time<<endl;
     }
     node_interval current_safe_interval = compute_current_interval(current_interval,start_time, &rtn_index);
@@ -928,10 +945,14 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
             all_interval_nodes[location][rtn_index].start_timestep = all_interval_nodes[location][rtn_index].start_timestep + 1;
             if (rtn_index>=1){
                 if (all_interval_nodes[location][rtn_index-1].is_safe== false){
-                    if (all_interval_nodes[location][rtn_index-1].id==agent_id and all_interval_nodes[location][rtn_index-1].from_where==last_position){
+                    /*
+                         I think you should update the all_interval_nodes[location][rtn_index-1].id/from_where only if *.id==agent_id 
+                    */                    
+                   if (all_interval_nodes[location][rtn_index-1].id==agent_id and all_interval_nodes[location][rtn_index-1].from_where==last_position){
                         all_interval_nodes[location][rtn_index-1].end_timestep=all_interval_nodes[location][rtn_index-1].end_timestep+1;
                     }
-                    else{
+
+                    else{ 
                         node_interval new_node=node_interval(false,current_time_step,current_time_step,agent_id,last_position);
                         all_interval_nodes[location].insert(all_interval_nodes[location].begin()+rtn_index,new_node);
                     }
