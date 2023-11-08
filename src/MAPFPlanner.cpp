@@ -48,9 +48,8 @@ node_interval MAPFPlanner::compute_current_interval(vector<node_interval> curren
     
     */
     while (!flag){
-
         if ((current_time<=current_safe_intervals[check_index].end_timestep) and (current_time>=current_safe_intervals[check_index].start_timestep)) {
-            *rtn_interval=current_safe_intervals[check_index];
+            rtn_interval=&current_safe_intervals[check_index];
             flag= true;
         } else {
             if (high_index == low_index+1) {
@@ -161,7 +160,7 @@ bool MAPFPlanner::decide_when_to_plan(int current_timestep,int RHCR_h){
     return flag;
 }
 
-void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int agent_id){
+void MAPFPlanner::insert_safe_intervals(int location, int time){
 
     vector<node_interval> current_node_intervals=all_interval_nodes[location];
     int intervals_num = current_node_intervals.size();
@@ -205,15 +204,21 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
         if (current_node_intervals[index_num+1].is_safe== true) {
             
             // what if the current_node_intervals[index_num].start_timestep == current_node_intervals[index_num].end_timestep
-            current_node_intervals[index_num].end_timestep=current_node_intervals[index_num].end_timestep-1; 
+            current_node_intervals[index_num].end_timestep=current_node_intervals[index_num].end_timestep-1;
 
             current_node_intervals[index_num+1].start_timestep=current_node_intervals[index_num+1].start_timestep-1;
+            if (current_node_intervals[index_num].start_timestep>current_node_intervals[index_num].end_timestep){
+                current_node_intervals.erase(current_node_intervals.begin()+index_num);
+            }
         }
         else {
             // same problem as above
             current_node_intervals[index_num].end_timestep=current_node_intervals[index_num].end_timestep-1;
             node_interval new_node=node_interval(true,time,time,-1,-1);
             current_node_intervals.insert(current_node_intervals.begin()+index_num+1,new_node);
+            if (current_node_intervals[index_num].start_timestep>current_node_intervals[index_num].end_timestep){
+                current_node_intervals.erase(current_node_intervals.begin()+index_num);
+            }
         }
 
     }
@@ -242,7 +247,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time, int last_pos,int
         int end_time_copy=current_node_intervals[index_num].end_timestep;
         current_node_intervals[index_num].end_timestep=time-1;
         /*
-            should also update drom_where in the current_node_intervals[index_num]
+            should also update from_where in the current_node_intervals[index_num]
         */
         node_interval insert_node_1=node_interval(true,time,time,-1,-1);
         current_node_intervals.insert(current_node_intervals.begin()+index_num+1,insert_node_1);
@@ -279,7 +284,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
         int sample_time=rand() %time_limit;
         constraints[sample_location][sample_direction].push_back(sample_time);
     }
-    if (env->curr_timestep>300) {
+    if (env->curr_timestep<4965) {
         // leave empty for testing
     } else if (replan_all_flag==true) {
         /*
@@ -321,10 +326,10 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
             vector<pair<int, int>> path;
             agent_path_index[current_agent] = agent_path_index[current_agent] + 1;
             if (plan_first_time_flag== true){
-                insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep,-1,current_agent);
+                insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep);
             }
             else{
-                insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep,agents_path[current_agent][agents_path[current_agent].size()-2].first,current_agent);
+                insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep);
             }
 
             if (env->goal_locations[current_agent].empty()) {
@@ -338,19 +343,15 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                               env->curr_states[current_agent].orientation,
                                               env->goal_locations[current_agent].front().first, all_interval_nodes,
                                               &find_flag, current_agent,constraints,&related_agents);
+                cout<<"Find flag is "<<find_flag<<endl;
                 if (find_flag== true) {
 
                     agents_index[current_agent] = 1;
                 }
                 else {
-                    std::ofstream myfile ("/home/joe-yan/Desktop/Yunzhou123-main/text_files/example.txt");
-                    if (myfile.is_open())
-                    {
-                        myfile <<std::to_string(related_agents.size())<< "\n";
-
-                    }
-                    myfile.close();
+                    insert_safe_intervals_from_path(related_agents,agents_path);
                     agents_index[current_agent] = 0;
+
                 }
 
                 agents_path[current_agent] = path;
@@ -428,7 +429,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                     cout<<all_interval_nodes[env->curr_states[current_agent].location][p].from_where<<endl;
 
                 }
-                insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep,agents_path[current_agent][agents_path[current_agent].size()-2].first,current_agent);
+                insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep);
                 cout<<"replanning!"<<endl;
 
                 int current_position=env->curr_states[current_agent].location;
@@ -466,13 +467,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 
                         agents_index[current_agent] = 1;
                     } else {
-                        std::ofstream myfile ("/home/joe-yan/Desktop/Yunzhou123-main/text_files/example.txt");
-                        if (myfile.is_open())
-                        {
-                            myfile <<std::to_string(related_agents.size())<< "\n";
-
-                        }
-                        myfile.close();
+                        insert_safe_intervals_from_path(related_agents,agents_path);
                         agents_index[current_agent] = 0;
                     }
                     agents_path[current_agent] = path;
@@ -554,7 +549,19 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
   return;
 }
 
+void MAPFPlanner::removeDuplicates(std::vector<int>& nums) {
+    unordered_set<int> numSet;
+    vector<int> result;
 
+    for (int num : nums) {
+        if (numSet.find(num) == numSet.end()) {
+            numSet.insert(num);
+            result.push_back(num);
+        }
+    }
+
+    nums = result;
+}
 vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int start, int start_direct, int end,vector<node_interval>* all_interval_nodes, bool* find_flag,int agent_id, std::vector<std::vector<std::vector<int>>> constraints,vector<int>* related_agents) {
 
     int start_time=env->curr_timestep;
@@ -577,7 +584,6 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             break;
         }
     }
-
     int maximum_timestep = 100000;
     priority_queue<SIPPNode,vector<SIPPNode>,SIPP_cmp> open_list;
     vector<SIPPNode*> current_reference_list;
@@ -784,9 +790,11 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             if (minimum_leave_time>maximum_leave_time){
                 continue;
             }
-
+            int current_index=0;
+            compute_current_interval(candidate_intervals,env->curr_timestep, &current_index);
             for (int j=0; j<intervals_num; j++) {
                 node_interval current_interval = candidate_intervals[j];
+
                 if (current_interval.is_safe== false){
                     continue;
                 }
@@ -797,8 +805,8 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
                 }
                 int next_agent_id=-1;
                 int last_move_pos=-1;
-                for (int p=rtn_index+1;p<candidate_intervals.size();p++){
-                    if (candidate_intervals[p].is_safe== false){
+                for (int p=current_index;p<candidate_intervals.size();p++){
+                    if (candidate_intervals[p].is_safe== false and candidate_intervals[p].start_timestep>current_interval.end_timestep){
                         next_agent_id=candidate_intervals[p].id;
                         last_move_pos=candidate_intervals[p].from_where;
                         break;
@@ -857,7 +865,11 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
 
         //}
     }
+    removeDuplicates(current_related_agents);
     *related_agents=current_related_agents;
+    for (int i=0;i<current_related_agents.size();i++){
+        cout<<"one related agent is "<<current_related_agents[i]<<endl;
+    }
     return agent_interpolate_path;
 }
 
@@ -869,7 +881,15 @@ int MAPFPlanner::getManhattanDistance(int loc1, int loc2)
     int loc2_y = loc2%env->cols;
     return abs(loc1_x - loc2_x) + abs(loc1_y - loc2_y);
 }
-
+void MAPFPlanner::insert_safe_intervals_from_path(vector<int>agents_id,vector<pair<int,int>>* agents_path){
+    for (int i=0;i<agents_id.size();i++){
+        int current_id=agents_id[i];
+        vector<pair<int,int>> current_agent_path=agents_path[current_id];
+        for (int j=0;j<current_agent_path.size();j++){
+            insert_safe_intervals(current_agent_path[j].first,env->curr_timestep+j);
+        }
+    }
+}
 bool MAPFPlanner::validateMove(int loc, int loc2) {
 
     int loc_x = loc/env->cols;
@@ -950,21 +970,37 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
                     */                    
                    if (all_interval_nodes[location][rtn_index-1].id==agent_id and all_interval_nodes[location][rtn_index-1].from_where==last_position){
                         all_interval_nodes[location][rtn_index-1].end_timestep=all_interval_nodes[location][rtn_index-1].end_timestep+1;
+                       all_interval_nodes[location][rtn_index].start_timestep=all_interval_nodes[location][rtn_index-1].end_timestep+1;
+                       if (all_interval_nodes[location][rtn_index].start_timestep>all_interval_nodes[location][rtn_index].end_timestep){
+                           all_interval_nodes[location].erase(all_interval_nodes[location].begin()+rtn_index);
+                       }
                     }
 
                     else{ 
                         node_interval new_node=node_interval(false,current_time_step,current_time_step,agent_id,last_position);
                         all_interval_nodes[location].insert(all_interval_nodes[location].begin()+rtn_index,new_node);
+                       all_interval_nodes[location][rtn_index+1].start_timestep=all_interval_nodes[location][rtn_index].end_timestep+1;
+                       if (all_interval_nodes[location][rtn_index+1].start_timestep>all_interval_nodes[location][rtn_index+1].end_timestep){
+                           all_interval_nodes[location].erase(all_interval_nodes[location].begin()+rtn_index+1);
+                       }
                     }
                 }
                 else{
                     node_interval new_node=node_interval(false,current_time_step,current_time_step,agent_id,last_position);
                     all_interval_nodes[location].insert(all_interval_nodes[location].begin()+rtn_index,new_node);
+                    all_interval_nodes[location][rtn_index+1].start_timestep=all_interval_nodes[location][rtn_index].end_timestep+1;
+                    if (all_interval_nodes[location][rtn_index+1].start_timestep>all_interval_nodes[location][rtn_index+1].end_timestep){
+                        all_interval_nodes[location].erase(all_interval_nodes[location].begin()+rtn_index+1);
+                    }
                 }
             }
             else{
                 node_interval new_node=node_interval(false,current_time_step,current_time_step,agent_id,last_position);
                 all_interval_nodes[location].insert(all_interval_nodes[location].begin()+rtn_index,new_node);
+                all_interval_nodes[location][rtn_index+1].start_timestep=all_interval_nodes[location][rtn_index].end_timestep+1;
+                if (all_interval_nodes[location][rtn_index+1].start_timestep>all_interval_nodes[location][rtn_index+1].end_timestep){
+                    all_interval_nodes[location].erase(all_interval_nodes[location].begin()+rtn_index+1);
+                }
             }
 
 
@@ -973,7 +1009,9 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
             all_interval_nodes[location][rtn_index].end_timestep = all_interval_nodes[location][rtn_index].end_timestep - 1;
             node_interval new_node=node_interval(false,current_time_step,current_time_step,agent_id,last_position);
             all_interval_nodes[location].insert(all_interval_nodes[location].begin()+rtn_index+1,new_node);
-
+            if (all_interval_nodes[location][rtn_index].start_timestep>all_interval_nodes[location][rtn_index].end_timestep){
+                all_interval_nodes[location].erase(all_interval_nodes[location].begin()+rtn_index);
+            }
 
         } else {
             int original_first_pos=all_interval_nodes[location][rtn_index].start_timestep;
@@ -981,8 +1019,14 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
             all_interval_nodes[location][rtn_index].end_timestep = current_time_step - 1;
             node_interval new_node=node_interval(false,current_time_step,current_time_step,agent_id,last_position);
             all_interval_nodes[location].insert(all_interval_nodes[location].begin()+rtn_index+1,new_node);
-            node_interval insert_node2=node_interval(true,current_time_step+1,original_last_pos,-1,-1);
-            all_interval_nodes[location].insert(all_interval_nodes[location].begin()+rtn_index+2,insert_node2);
+            if (original_last_pos>=current_time_step+1){
+                node_interval insert_node2=node_interval(true,current_time_step+1,original_last_pos,-1,-1);
+                all_interval_nodes[location].insert(all_interval_nodes[location].begin()+rtn_index+2,insert_node2);
+            }
+            if (all_interval_nodes[location][rtn_index].start_timestep>all_interval_nodes[location][rtn_index].end_timestep){
+                all_interval_nodes[location].erase(all_interval_nodes[location].begin()+rtn_index);
+            }
+
         }
     }
 }

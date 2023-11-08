@@ -74,7 +74,7 @@ public:
     //vector<pair<int,int>>* safe_intervals;
     vector<node_interval>* all_interval_nodes;
     //vector<pair<int,int>>* last_move_pos;
-
+    void removeDuplicates(std::vector<int>& nums);
     void map_index_to_vec_index(int map_h, int map_w, int &vec_index);
     void vec_index_to_map_index(int &map_h, int &map_w, int vec_index);
     
@@ -83,8 +83,9 @@ public:
     node_interval compute_current_interval(vector<node_interval> current_safe_intervals,int current_time,int* rtn_index);
     vector<pair<int,int>> single_agent_plan_SIPP_with_constraints(int start, int start_direct, int end, vector<node_interval>* all_interval_nodes, bool* find_flag, int agent_id,std::vector<std::vector<std::vector<int>>> constraints,vector<int>* related_agents);
 
-    void insert_safe_intervals(int location, int time,int last_pos,int agent_id);
+    void insert_safe_intervals(int location, int time);
     void SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id);
     vector<int>*  generate_random_constraint();
+    void insert_safe_intervals_from_path(vector<int>agents_id,vector<pair<int,int>>* agents_path);
 };
 
