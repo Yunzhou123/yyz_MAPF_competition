@@ -284,7 +284,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
         int sample_time=rand() %time_limit;
         constraints[sample_location][sample_direction].push_back(sample_time);
     }
-    if (env->curr_timestep<4965) {
+    if (env->curr_timestep<4935) {
         // leave empty for testing
     } else if (replan_all_flag==true) {
         /*
@@ -350,6 +350,14 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                 }
                 else {
                     insert_safe_intervals_from_path(related_agents,agents_path);
+                    related_agents.push_back(current_agent);
+                    vector<pair<int,int>> replan_paths[related_agents.size()];
+                    for (int n=0;n<related_agents.size();n++){
+                        vector<int> new_related_agents;
+                        replan_paths[n]=single_agent_plan_SIPP_with_constraints(env->curr_states[related_agents[n]].location,
+                                                                                env->curr_states[related_agents[n]].orientation,
+                                                                                env->goal_locations[related_agents[n]].front().first,all_interval_nodes,&find_flag, related_agents[n],constraints,&new_related_agents);
+                    }
                     agents_index[current_agent] = 0;
 
                 }
@@ -468,6 +476,14 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                         agents_index[current_agent] = 1;
                     } else {
                         insert_safe_intervals_from_path(related_agents,agents_path);
+                        related_agents.push_back(current_agent);
+                        vector<pair<int,int>> replan_paths[related_agents.size()];
+                        for (int n=0;n<related_agents.size();n++){
+                            vector<int> new_related_agents;
+                            replan_paths[n]=single_agent_plan_SIPP_with_constraints(env->curr_states[related_agents[n]].location,
+                                                                                    env->curr_states[related_agents[n]].orientation,
+                                                                                    env->goal_locations[related_agents[n]].front().first,all_interval_nodes,&find_flag, related_agents[n],constraints,&new_related_agents);
+                        }
                         agents_index[current_agent] = 0;
                     }
                     agents_path[current_agent] = path;
