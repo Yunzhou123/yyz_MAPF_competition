@@ -7,6 +7,16 @@
 using namespace std::chrono;
 int a=1+1;
 
+struct conflict{
+    int location;
+    int dest;  //can ignore if type == 0
+    int agent1;
+    int agent2;
+    int type;
+};
+
+vector<struct conflict> detect_conflict(vector<int>agent_id, vector<pair<int, int>>* agents_path);
+
 /**
  * @brief helper function
  * @param array The array to sort
@@ -1045,4 +1055,47 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
 
         }
     }
+}
+
+/*
+    Assume every agents' path start from the same time t
+    the length of path may various
+    pair<position, direction>
+    direction => 0: Forward
+                 1: Backward
+                 2: upward
+                 3: downward
+    map size: env->rows * env->cols
+*/
+
+vector<struct conflict> detect_conflict(vector<int>agent_id, vector<pair<int, int>>* agents_path){
+    vector<struct conflict> v;
+    for(int i = 1; i < agent_id.size(); i++){
+        for(int j = 0; j < agents_path[i].size(); j++){
+            int loc = agents_path[i][j].first;
+            int dir = agent_path[i][j].second;
+            for(int k = 0; k < i; k++){
+                int prev_path_len = agents_path[k].size();
+                if(j < prev_path_len){
+                    int prev_loc = agents_path[k][j].first;
+                    int prev_dir = agents_path[k][j].second;
+                    if(prev_loc == loc){    // node conflict
+                        struct conflict node_conflict = {loc, -1, agent_id[i], agent_id[k], 0};
+                        v.push_back(node_conflict);
+                    }
+                    else{
+                        if((j < prev_path_len - 1) && (j < agents_path[i].size() - 1)){
+                            int dest = agents_path[i][j+1].first;
+                            int prev_dest = agents_path[k][j+1].first;
+                            if(prev_dest == loc && prev_loc == dest){  //edge conflict
+                                struct conflict edge_conflict = {loc, dest, agent_id[i], agent_id[k], 1};
+                                v.push_back(edge_conflict);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return v;
 }
