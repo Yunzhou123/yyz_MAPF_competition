@@ -100,7 +100,7 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
     std::vector<std::vector<std::vector<int>>> initial_constraints[related_agents.size()];
     std::vector<std::vector<std::vector<int>>> initial_stay_constraints[related_agents.size()];
     vector<int> new_CBS_related_agents;
-    int select_neigh_num=6;
+    int select_neigh_num=10;
 
     *find_sol_flag= false;
     cout<<related_agents.size()<<endl;
@@ -729,7 +729,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
         int sample_time=rand() %time_limit;
         constraints[sample_location][sample_direction].push_back(sample_time);
     }
-    if (env->curr_timestep>3000) {
+    if (env->curr_timestep>5000) {
         // leave empty for testing
     } else if (replan_all_flag==true) {
         /*
@@ -1727,8 +1727,15 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             MyFile.close();
         }
     }
-    if (next_agent_id!=-1){
-        current_related_agents.push_back(current_interval[rtn_index+1].id);
+    for (int i=rtn_index+1;i<current_interval.size();i++){
+        if (current_interval[i].is_safe== true){
+            break;
+        }
+        else{
+            if (current_interval[i].id!=-1){
+                current_related_agents.push_back(current_interval[i].id);
+            }
+        }
     }
 
     //for (int i=rtn_index+1;i<current_interval.size();i++){
@@ -2094,18 +2101,18 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
                     if (check_time<current_interval.end_timestep-1){
                         candidate_valid_intervals.push_back(make_pair(check_time,current_interval.end_timestep-1));
                     }
-                    std::ofstream outfile("log.txt",std::ofstream::app);
-                    if (outfile.is_open()){
-                        outfile <<"There are "<<candidate_valid_intervals.size()<<" valid intervals"<<endl;
-                        outfile.close();
-                    }
-                    else{
-                        std::ofstream MyFile("log.txt");
+                    //std::ofstream outfile("log.txt",std::ofstream::app);
+                    //if (outfile.is_open()){
+                        //outfile <<"There are "<<candidate_valid_intervals.size()<<" valid intervals"<<endl;
+                        //outfile.close();
+                    //}
+                    //else{
+                        //std::ofstream MyFile("log.txt");
                         // Write to the file
-                        outfile <<"There are "<<candidate_valid_intervals.size()<<" valid intervals"<<endl;
+                       // outfile <<"There are "<<candidate_valid_intervals.size()<<" valid intervals"<<endl;
                         // Close the file
-                        MyFile.close();
-                    }
+                        //MyFile.close();
+                   // }
                 }
                 for (int e=0;e<candidate_valid_intervals.size();e++){
                     //cout<<e<<endl;
