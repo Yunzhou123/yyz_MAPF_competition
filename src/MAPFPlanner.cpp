@@ -729,7 +729,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
         int sample_time=rand() %time_limit;
         constraints[sample_location][sample_direction].push_back(sample_time);
     }
-    if (env->curr_timestep>1000) {
+    if (env->curr_timestep>3000) {
         // leave empty for testing
     } else if (replan_all_flag==true) {
         /*
@@ -836,151 +836,219 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                 }
                 else {
                     bool CBS_success_flag= false;
+                    bool CBS_terminate_flag= false;
+                    int CBS_replan_count=0;
                     related_agents.insert(related_agents.begin(),current_agent);
-                    insert_safe_intervals_from_path(related_agents,agents_path,agents_time_list);
-                    //related_agents.push_back(current_agent);
-                    vector<pair<int,int>>* replan_paths;
-                    replan_paths=new vector<pair<int,int>>[related_agents.size()];
-                    vector<int> *replan_time_lists;
-                    replan_time_lists=new vector<int>[related_agents.size()];
-                    int solution_cost=0;
-                    bool replan_find_flag= true;
-                    cout<<"debug"<<endl;
-                    cout<<related_agents.size()<<endl;
-                    cout<<replan_paths->size()<<endl;
+                    while (CBS_terminate_flag== false){
+                        insert_safe_intervals_from_path(related_agents,agents_path,agents_time_list);
+                        //related_agents.push_back(current_agent);
+                        vector<pair<int,int>>* replan_paths;
+                        replan_paths=new vector<pair<int,int>>[related_agents.size()];
+                        vector<int> *replan_time_lists;
+                        replan_time_lists=new vector<int>[related_agents.size()];
+                        int solution_cost=0;
+                        bool replan_find_flag= true;
+                        cout<<"debug"<<endl;
+                        cout<<related_agents.size()<<endl;
+                        cout<<replan_paths->size()<<endl;
 
-                    for (int n=0;n<related_agents.size();n++){
-                        vector<int> new_related_agents;
-                        vector <int> curent_time_list;
-                        bool current_find_flag= false;
-                        if (already_planned_agents[related_agents[n]]==1){
-                            insert_safe_intervals_from_one_path(related_agents[n],agents_path[related_agents[n]],agents_time_list[related_agents[n]]);
-                        }
-                        replan_paths[n]=single_agent_plan_SIPP_with_constraints(env->curr_states[related_agents[n]].location,
-                                                                                env->curr_states[related_agents[n]].orientation,
-                                                                                env->goal_locations[related_agents[n]].front().first,all_interval_nodes,&current_find_flag, related_agents[n],constraints,&new_related_agents,&curent_time_list,
-                                                                                false,stay_constraints);
-
-
-                        if (current_find_flag== false){
-                            replan_find_flag=false;
-                        }
-                        replan_time_lists[n]=curent_time_list;
-                        std::ofstream outfile("log.txt",std::ofstream::app);
-                        if (outfile.is_open()){
-                            outfile <<"agent "<<related_agents[n]<<endl;
-                            outfile <<env->curr_timestep<<endl;
-                            outfile.close();
-                        }
-                        else{
-                            std::ofstream MyFile("log.txt");
-                            // Write to the file
-                            MyFile <<"agent "<<related_agents[n]<<endl;
-                            MyFile<<env->curr_timestep<<endl;
-                            // Close the file
-                            MyFile.close();
-                        }
-                        for (int z=0;z<curent_time_list.size();z++){
-                            std::ofstream outfile("log.txt",std::ofstream::app);
-                            if (outfile.is_open()){
-                                outfile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
-                                outfile <<curent_time_list[z]<<endl;
-                                outfile.close();
-                            }
-                            else{
-                                std::ofstream MyFile("log.txt");
-                                // Write to the file
-                                MyFile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
-                                MyFile <<curent_time_list[z]<<endl;
-                                // Close the file
-                                MyFile.close();
-                            }
-                        }
-                        solution_cost=solution_cost+replan_paths[n].size();
-                    }
-                    vector<conflict> conflicts=detect_conflict(related_agents, replan_paths, env->curr_timestep);
-
-
-
-                    cout<<"The number of conflicts is "<<conflicts.size()<<endl;
-                    if  (conflicts.size()==0 and replan_find_flag== true){
-                        agents_index[current_agent] = 1;
-                        find_flag=true;
-                        CBS_success_flag= true;
                         for (int n=0;n<related_agents.size();n++){
-                            agents_path[related_agents[n]] = replan_paths[n];
-                            SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
-                            agents_time_list[related_agents[n]]=replan_time_lists[n];
-                        }
-                    }
-                    else{
-                        bool find_sol_flag=false;
-                        vector<pair<int,int>> found_replan_paths[related_agents.size()];
-                        vector<int> found_replan_time_lists[related_agents.size()];
-                        vector<int> CBS_related_agents;
-                        CBS(conflicts,replan_paths,related_agents,agents_time_list,&find_sol_flag,found_replan_paths,found_replan_time_lists,&CBS_related_agents);
-                        std::ofstream outfile("log.txt",std::ofstream::app);
-                        if (outfile.is_open()){
-                            outfile <<"The neighborhood agents: "<<endl;
-                            for (int z=0;z<CBS_related_agents.size();z++){
-                                outfile <<CBS_related_agents[z]<<endl;
+                            vector<int> new_related_agents;
+                            vector <int> curent_time_list;
+                            bool current_find_flag= false;
+                            if (already_planned_agents[related_agents[n]]==1){
+                                insert_safe_intervals_from_one_path(related_agents[n],agents_path[related_agents[n]],agents_time_list[related_agents[n]]);
                             }
-                            outfile.close();
-                        }
-                        else{
-                            std::ofstream MyFile("log.txt");
-                            // Write to the file
-                            MyFile<<"The neighborhood agents: "<<endl;
-                            for (int z=0;z<CBS_related_agents.size();z++){
-                                MyFile <<CBS_related_agents[z]<<endl;
+                            replan_paths[n]=single_agent_plan_SIPP_with_constraints(env->curr_states[related_agents[n]].location,
+                                                                                    env->curr_states[related_agents[n]].orientation,
+                                                                                    env->goal_locations[related_agents[n]].front().first,all_interval_nodes,&current_find_flag, related_agents[n],constraints,&new_related_agents,&curent_time_list,
+                                                                                    false,stay_constraints);
+
+
+                            if (current_find_flag== false){
+                                replan_find_flag=false;
                             }
-                            // Close the file
-                            MyFile.close();
-                        }
-                        if (find_sol_flag== true){
+                            replan_time_lists[n]=curent_time_list;
                             std::ofstream outfile("log.txt",std::ofstream::app);
                             if (outfile.is_open()){
-                                outfile <<"update path! "<<endl;
+                                outfile <<"agent "<<related_agents[n]<<endl;
+                                outfile <<env->curr_timestep<<endl;
                                 outfile.close();
                             }
                             else{
                                 std::ofstream MyFile("log.txt");
                                 // Write to the file
-                                MyFile<<"update path!"<<endl;
+                                MyFile <<"agent "<<related_agents[n]<<endl;
+                                MyFile<<env->curr_timestep<<endl;
                                 // Close the file
                                 MyFile.close();
                             }
+                            for (int z=0;z<curent_time_list.size();z++){
+                                std::ofstream outfile("log.txt",std::ofstream::app);
+                                if (outfile.is_open()){
+                                    outfile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
+                                    outfile <<curent_time_list[z]<<endl;
+                                    outfile.close();
+                                }
+                                else{
+                                    std::ofstream MyFile("log.txt");
+                                    // Write to the file
+                                    MyFile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
+                                    MyFile <<curent_time_list[z]<<endl;
+                                    // Close the file
+                                    MyFile.close();
+                                }
+                            }
+                            solution_cost=solution_cost+replan_paths[n].size();
+                        }
+                        vector<conflict> conflicts=detect_conflict(related_agents, replan_paths, env->curr_timestep);
+
+
+
+                        cout<<"The number of conflicts is "<<conflicts.size()<<endl;
+                        std::ofstream outfile("log.txt",std::ofstream::app);
+                        if (outfile.is_open()){
+                            outfile <<"The number of conflicts is "<<conflicts.size()<<endl;
+                            outfile.close();
+                        }
+                        else {
+                            std::ofstream MyFile("log.txt");
+                            // Write to the file
+                            MyFile << "The number of conflicts is " << conflicts.size() << endl;
+                            // Close the file
+                            MyFile.close();
+                        }
+                        if  (conflicts.size()==0 and replan_find_flag== true){
+                            agents_index[current_agent] = 1;
                             find_flag=true;
                             CBS_success_flag= true;
+                            CBS_terminate_flag= true;
                             for (int n=0;n<related_agents.size();n++){
-                                already_planned_agents[related_agents[n]]=1;
-                                agents_index[related_agents[n]] = 1;
-                                agents_path[related_agents[n]] = found_replan_paths[n];
-                                SIPP_update_safe_intervals(found_replan_paths[n],related_agents[n]);
-                                agents_time_list[related_agents[n]]=found_replan_time_lists[n];
+                                agents_path[related_agents[n]] = replan_paths[n];
+                                std::ofstream outfile("log.txt",std::ofstream::app);
+                                if (outfile.is_open()){
+                                    outfile <<"before update"<<endl;
+                                }
+                                else{
+                                    std::ofstream MyFile("log.txt");
+                                    // Write to the file
+                                    MyFile<<"update path!"<<endl;
+                                    // Close the file
+                                    MyFile.close();
+                                }
+                                log_safe_intervals(replan_paths[n],related_agents[i]);
+                                SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
+                                if (outfile.is_open()){
+                                    outfile <<"after update"<<endl;
+                                    outfile.close();
+                                }
+                                else{
+                                    std::ofstream MyFile("log.txt");
+                                    // Write to the file
+                                    MyFile<<"after update!"<<endl;
+                                    // Close the file
+                                    MyFile.close();
+                                }
+                                log_safe_intervals(replan_paths[n],related_agents[i]);
+                                agents_time_list[related_agents[n]]=replan_time_lists[n];
                             }
                         }
                         else{
-                            //related_agents=CBS_related_agents;
-                            //insert_safe_intervals_from_path(related_agents,agents_path,agents_time_list);
-
+                            bool find_sol_flag=false;
+                            vector<pair<int,int>> found_replan_paths[related_agents.size()];
+                            vector<int> found_replan_time_lists[related_agents.size()];
+                            vector<int> CBS_related_agents;
+                            CBS(conflicts,replan_paths,related_agents,agents_time_list,&find_sol_flag,found_replan_paths,found_replan_time_lists,&CBS_related_agents);
                             std::ofstream outfile("log.txt",std::ofstream::app);
                             if (outfile.is_open()){
-                                outfile <<"cannot find path!"<<endl;
+                                outfile <<"The neighborhood agents: "<<endl;
+                                for (int z=0;z<CBS_related_agents.size();z++){
+                                    outfile <<CBS_related_agents[z]<<endl;
+                                }
                                 outfile.close();
                             }
                             else{
                                 std::ofstream MyFile("log.txt");
                                 // Write to the file
-                                outfile <<"cannot find path!"<<endl;
+                                MyFile<<"The neighborhood agents: "<<endl;
+                                for (int z=0;z<CBS_related_agents.size();z++){
+                                    MyFile <<CBS_related_agents[z]<<endl;
+                                }
                                 // Close the file
                                 MyFile.close();
                             }
+                            if (find_sol_flag== true){
+                                CBS_terminate_flag= true;
+                                std::ofstream outfile("log.txt",std::ofstream::app);
+                                if (outfile.is_open()){
+                                    outfile <<"update path! "<<endl;
+                                    outfile.close();
+                                }
+                                else{
+                                    std::ofstream MyFile("log.txt");
+                                    // Write to the file
+                                    MyFile<<"update path!"<<endl;
+                                    // Close the file
+                                    MyFile.close();
+                                }
+                                find_flag=true;
+                                CBS_success_flag= true;
+                                for (int n=0;n<related_agents.size();n++){
+                                    already_planned_agents[related_agents[n]]=1;
+                                    agents_index[related_agents[n]] = 1;
+                                    agents_path[related_agents[n]] = found_replan_paths[n];
+                                    std::ofstream outfile("log.txt",std::ofstream::app);
+                                    if (outfile.is_open()){
+                                        outfile <<"before update"<<endl;
+                                    }
+                                    else{
+                                        std::ofstream MyFile("log.txt");
+                                        // Write to the file
+                                        MyFile<<"before update!"<<endl;
+                                        // Close the file
+                                        MyFile.close();
+                                    }
+                                    log_safe_intervals(replan_paths[n],related_agents[i]);
+                                    SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
+                                    if (outfile.is_open()){
+                                        outfile <<"after update"<<endl;
+                                        outfile.close();
+                                    }
+                                    else{
+                                        std::ofstream MyFile("log.txt");
+                                        // Write to the file
+                                        MyFile<<"after update"<<endl;
+                                        // Close the file
+                                        MyFile.close();
+                                    }
+                                    log_safe_intervals(replan_paths[n],related_agents[i]);
+                                    agents_time_list[related_agents[n]]=found_replan_time_lists[n];
+                                }
+                            }
+                            else{
+                                related_agents=CBS_related_agents;
+                                //insert_safe_intervals_from_path(related_agents,agents_path,agents_time_list);
 
-                            agents_index[current_agent] = 0;
+                                std::ofstream outfile("log.txt",std::ofstream::app);
+                                if (outfile.is_open()){
+                                    outfile <<"cannot find path!"<<endl;
+                                    outfile.close();
+                                }
+                                else{
+                                    std::ofstream MyFile("log.txt");
+                                    // Write to the file
+                                    outfile <<"cannot find path!"<<endl;
+                                    // Close the file
+                                    MyFile.close();
+                                }
+
+                                agents_index[current_agent] = 0;
+                            }
+                            if (CBS_replan_count>3){
+                                CBS_terminate_flag= true;
+                            }
                         }
-
-                    }
+                        }
                     if (CBS_success_flag== false){
                         cout << "begin to generate path!" << endl;
                         cout<<current_agent<<endl;
@@ -1219,137 +1287,208 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                         }
                     } else {
                         bool CBS_replan_flag= false;
-                        insert_safe_intervals_from_path(related_agents,agents_path,agents_time_list);
                         related_agents.insert(related_agents.begin(),current_agent);
-                        vector<pair<int,int>>* replan_paths;
-                        replan_paths=new vector<pair<int,int>>[related_agents.size()];
-                        vector<int> *replan_time_lists;
-                        replan_time_lists=new vector<int>[related_agents.size()];
-                        int solution_cost=0;
-                        bool replan_find_flag= true;
-                        cout<<"debug"<<endl;
-                        cout<<related_agents.size()<<endl;
-                        for (int n=0;n<related_agents.size();n++){
-                            vector<int> new_related_agents;
-                            vector <int> curent_time_list;
-                            bool current_find_flag= false;
-                            if (already_planned_agents[related_agents[n]]==1){
-                                insert_safe_intervals_from_one_path(related_agents[n],agents_path[related_agents[n]],agents_time_list[related_agents[n]]);
-                            }
-                            replan_paths[n]=single_agent_plan_SIPP_with_constraints(env->curr_states[related_agents[n]].location,
-                                                                                    env->curr_states[related_agents[n]].orientation,
-                                                                                    env->goal_locations[related_agents[n]].front().first,all_interval_nodes,&current_find_flag, related_agents[n],constraints,&new_related_agents,&curent_time_list,
-                                                                                    false,stay_constraints);
-                            if (current_find_flag== false){
-                                replan_find_flag=false;
-                            }
-                            std::ofstream outfile("log.txt",std::ofstream::app);
-                            if (outfile.is_open()){
-                                outfile <<"agent "<<related_agents[n]<<endl;
-                                outfile <<env->curr_timestep<<endl;
-                                outfile.close();
-                            }
-                            else{
-                                std::ofstream MyFile("log.txt");
-                                // Write to the file
-                                MyFile <<"agent "<<related_agents[n]<<endl;
-                                MyFile<< env->curr_timestep<<endl;
-                                // Close the file
-                                MyFile.close();
-                            }
-                            for (int z=0;z<curent_time_list.size();z++){
-                                std::ofstream outfile("log.txt",std::ofstream::app);
-                                if (outfile.is_open()){
-                                    outfile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
-                                    outfile <<curent_time_list[z]<<endl;
-                                    outfile.close();
-                                }
-                                else{
-                                    std::ofstream MyFile("log.txt");
-                                    // Write to the file
-                                    MyFile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
-                                    MyFile<<curent_time_list[z]<<endl;
-                                    // Close the file
-                                    MyFile.close();
-                                }
-                            }
-                            replan_time_lists[n]=curent_time_list;
-                            solution_cost=solution_cost+replan_paths[n].size();
-                        }
-                        vector<conflict> conflicts=detect_conflict(related_agents, replan_paths, env->curr_timestep);
-
-                        cout<<"The number of conflicts is "<<conflicts.size()<<endl;
-                        if  (conflicts.size()==0 and replan_find_flag== true){
-                            CBS_replan_flag=true;
-                            agents_index[current_agent] = 1;
-                            find_flag=true;
+                        bool CBS_terminate_flag= false;
+                        int CBS_replan_count=0;
+                        while (CBS_terminate_flag== false){
+                            insert_safe_intervals_from_path(related_agents,agents_path,agents_time_list);
+                            vector<pair<int,int>>* replan_paths;
+                            replan_paths=new vector<pair<int,int>>[related_agents.size()];
+                            vector<int> *replan_time_lists;
+                            replan_time_lists=new vector<int>[related_agents.size()];
+                            int solution_cost=0;
+                            bool replan_find_flag= true;
+                            cout<<"debug"<<endl;
+                            cout<<related_agents.size()<<endl;
                             for (int n=0;n<related_agents.size();n++){
-                                agents_path[related_agents[n]] = replan_paths[n];
-                                agents_time_list[related_agents[n]]=replan_time_lists[n];
-                                SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
+                                vector<int> new_related_agents;
+                                vector <int> curent_time_list;
+                                bool current_find_flag= false;
+                                if (already_planned_agents[related_agents[n]]==1){
+                                    insert_safe_intervals_from_one_path(related_agents[n],agents_path[related_agents[n]],agents_time_list[related_agents[n]]);
+                                }
+                                replan_paths[n]=single_agent_plan_SIPP_with_constraints(env->curr_states[related_agents[n]].location,
+                                                                                        env->curr_states[related_agents[n]].orientation,
+                                                                                        env->goal_locations[related_agents[n]].front().first,all_interval_nodes,&current_find_flag, related_agents[n],constraints,&new_related_agents,&curent_time_list,
+                                                                                        false,stay_constraints);
+                                if (current_find_flag== false){
+                                    replan_find_flag=false;
+                                }
+                                std::ofstream outfile("log.txt",std::ofstream::app);
+                                if (outfile.is_open()){
+                                    outfile <<"agent "<<related_agents[n]<<endl;
+                                    outfile <<env->curr_timestep<<endl;
+                                    outfile.close();
+                                }
+                                else{
+                                    std::ofstream MyFile("log.txt");
+                                    // Write to the file
+                                    MyFile <<"agent "<<related_agents[n]<<endl;
+                                    MyFile<< env->curr_timestep<<endl;
+                                    // Close the file
+                                    MyFile.close();
+                                }
+                                for (int z=0;z<curent_time_list.size();z++){
+                                    std::ofstream outfile("log.txt",std::ofstream::app);
+                                    if (outfile.is_open()){
+                                        outfile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
+                                        outfile <<curent_time_list[z]<<endl;
+                                        outfile.close();
+                                    }
+                                    else{
+                                        std::ofstream MyFile("log.txt");
+                                        // Write to the file
+                                        MyFile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
+                                        MyFile<<curent_time_list[z]<<endl;
+                                        // Close the file
+                                        MyFile.close();
+                                    }
+                                }
+                                replan_time_lists[n]=curent_time_list;
+                                solution_cost=solution_cost+replan_paths[n].size();
                             }
-                        }
-                        else{
-                            bool find_sol_flag=false;
-                            vector<pair<int,int>> found_replan_paths[related_agents.size()];
-                            vector<int> found_replan_time_lists[related_agents.size()];
-                            vector<int> CBS_related_agents;
-                            CBS(conflicts,replan_paths,related_agents,agents_time_list,&find_sol_flag,found_replan_paths,found_replan_time_lists,&CBS_related_agents);
+                            vector<conflict> conflicts=detect_conflict(related_agents, replan_paths, env->curr_timestep);
+
+                            cout<<"The number of conflicts is "<<conflicts.size()<<endl;
                             std::ofstream outfile("log.txt",std::ofstream::app);
                             if (outfile.is_open()){
-                                outfile <<"The neighborhood agents: "<<endl;
-                                for (int z=0;z<CBS_related_agents.size();z++){
-                                    outfile <<CBS_related_agents[z]<<endl;
-                                }
+                                outfile <<"The number of conflicts is "<<conflicts.size()<<endl;
                                 outfile.close();
                             }
                             else{
                                 std::ofstream MyFile("log.txt");
                                 // Write to the file
-                                MyFile<<"The neighborhood agents: "<<endl;
-                                for (int z=0;z<CBS_related_agents.size();z++){
-                                    MyFile <<CBS_related_agents[z]<<endl;
-                                }
+                                MyFile<<"The number of conflicts is "<<conflicts.size()<<endl;
                                 // Close the file
                                 MyFile.close();
                             }
-                            if (find_sol_flag== true){
-                                std::ofstream outfile("log.txt",std::ofstream::app);
-                                if (outfile.is_open()){
-                                    outfile <<"update path! "<<endl;
-                                    outfile.close();
-                                }
-                                else{
-                                    std::ofstream MyFile("log.txt");
-                                    // Write to the file
-                                    MyFile<<"update path!"<<endl;
-                                    // Close the file
-                                    MyFile.close();
-                                }
-
+                            if  (conflicts.size()==0 and replan_find_flag== true){
+                                CBS_replan_flag=true;
+                                CBS_terminate_flag=true;
+                                agents_index[current_agent] = 1;
                                 find_flag=true;
-                                CBS_replan_flag= true;
                                 for (int n=0;n<related_agents.size();n++){
-                                    agents_index[related_agents[n]] = 1;
-                                    agents_path[related_agents[n]] = found_replan_paths[n];
-                                    SIPP_update_safe_intervals(found_replan_paths[n],related_agents[n]);
-                                    agents_time_list[related_agents[n]]=found_replan_time_lists[n];
+                                    agents_index[related_agents[n]]=1;
+                                    agents_path[related_agents[n]] = replan_paths[n];
+                                    agents_time_list[related_agents[n]]=replan_time_lists[n];
+                                    std::ofstream outfile("log.txt",std::ofstream::app);
+                                    if (outfile.is_open()){
+                                        outfile <<"before update"<<endl;
+                                    }
+                                    else{
+                                        std::ofstream MyFile("log.txt");
+                                        // Write to the file
+                                        MyFile<<"before update"<<endl;
+                                        // Close the file
+                                        MyFile.close();
+                                    }
+                                    log_safe_intervals(replan_paths[n],related_agents[i]);
+                                    SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
+                                    if (outfile.is_open()){
+                                        outfile <<"after update"<<endl;
+                                        outfile.close();
+                                    }
+                                    else{
+                                        std::ofstream MyFile("log.txt");
+                                        // Write to the file
+                                        MyFile<<"after update!"<<endl;
+                                        // Close the file
+                                        MyFile.close();
+                                    }
+                                    log_safe_intervals(replan_paths[n],related_agents[i]);
                                 }
                             }
                             else{
+                                bool find_sol_flag=false;
+                                vector<pair<int,int>> found_replan_paths[related_agents.size()];
+                                vector<int> found_replan_time_lists[related_agents.size()];
+                                vector<int> CBS_related_agents;
+                                CBS(conflicts,replan_paths,related_agents,agents_time_list,&find_sol_flag,found_replan_paths,found_replan_time_lists,&CBS_related_agents);
                                 std::ofstream outfile("log.txt",std::ofstream::app);
                                 if (outfile.is_open()){
-                                    outfile <<"cannot find path!"<<endl;
+                                    outfile <<"The neighborhood agents: "<<endl;
+                                    for (int z=0;z<CBS_related_agents.size();z++){
+                                        outfile <<CBS_related_agents[z]<<endl;
+                                    }
                                     outfile.close();
                                 }
                                 else{
                                     std::ofstream MyFile("log.txt");
                                     // Write to the file
-                                    outfile <<"cannot find path!"<<endl;
+                                    MyFile<<"The neighborhood agents: "<<endl;
+                                    for (int z=0;z<CBS_related_agents.size();z++){
+                                        MyFile <<CBS_related_agents[z]<<endl;
+                                    }
                                     // Close the file
                                     MyFile.close();
                                 }
-                                agents_index[current_agent] = 0;
+                                if (find_sol_flag== true){
+                                    std::ofstream outfile("log.txt",std::ofstream::app);
+                                    if (outfile.is_open()){
+                                        outfile <<"update path! "<<endl;
+                                        outfile.close();
+                                    }
+                                    else{
+                                        std::ofstream MyFile("log.txt");
+                                        // Write to the file
+                                        MyFile<<"update path!"<<endl;
+                                        // Close the file
+                                        MyFile.close();
+                                    }
+                                    CBS_terminate_flag=true;
+                                    find_flag=true;
+                                    CBS_replan_flag= true;
+                                    for (int n=0;n<related_agents.size();n++){
+                                        agents_index[related_agents[n]] = 1;
+                                        agents_path[related_agents[n]] = found_replan_paths[n];
+                                        std::ofstream outfile("log.txt",std::ofstream::app);
+                                        if (outfile.is_open()){
+                                            outfile <<"before update"<<endl;
+                                        }
+                                        else{
+                                            std::ofstream MyFile("log.txt");
+                                            // Write to the file
+                                            MyFile<<"before update"<<endl;
+                                            // Close the file
+                                            MyFile.close();
+                                        }
+                                        log_safe_intervals(replan_paths[n],related_agents[i]);
+                                        SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
+                                        if (outfile.is_open()){
+                                            outfile <<"after update"<<endl;
+                                            outfile.close();
+                                        }
+                                        else{
+                                            std::ofstream MyFile("log.txt");
+                                            // Write to the file
+                                            MyFile<<"after update!"<<endl;
+                                            // Close the file
+                                            MyFile.close();
+                                        }
+                                        log_safe_intervals(replan_paths[n],related_agents[i]);
+                                        agents_time_list[related_agents[n]]=found_replan_time_lists[n];
+                                    }
+                                }
+                                else{
+                                    related_agents=CBS_related_agents;
+                                    std::ofstream outfile("log.txt",std::ofstream::app);
+                                    if (outfile.is_open()){
+                                        outfile <<"cannot find path!"<<endl;
+                                        outfile.close();
+                                    }
+                                    else{
+                                        std::ofstream MyFile("log.txt");
+                                        // Write to the file
+                                        outfile <<"cannot find path!"<<endl;
+                                        // Close the file
+                                        MyFile.close();
+                                    }
+                                    agents_index[current_agent] = 0;
+                                }
+                            }
+                            CBS_replan_count=CBS_replan_count+1;
+                            if (CBS_replan_count>3){
+                                CBS_terminate_flag= true;
                             }
                         }
                         if (CBS_replan_flag== false){
@@ -1548,12 +1687,14 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
         std::ofstream outfile("log.txt",std::ofstream::app);
         if (outfile.is_open()){
             outfile <<"something wrong"<<endl;
+            outfile <<current_safe_interval.start_timestep<<","<<current_safe_interval.end_timestep<<endl;
             outfile.close();
         }
         else{
             std::ofstream MyFile("log.txt");
             // Write to the file
             MyFile <<"something wrong"<<endl;
+            MyFile<<current_safe_interval.start_timestep<<","<<current_safe_interval.end_timestep<<endl;
             // Close the file
             MyFile.close();
         }
@@ -1569,7 +1710,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
         }
         if (outfile.is_open()){
             outfile <<current_interval[rtn_index+1].id<<endl;
-            outfile <<agent_id<<endl;
+            outfile <<"current agent "<<agent_id<<endl;
             outfile <<current_interval[rtn_index+1].is_safe<<endl;
             outfile <<current_interval[rtn_index+1].start_timestep<<" , "<<current_interval[rtn_index+1].end_timestep<<endl;
             outfile.close();
@@ -1578,6 +1719,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             std::ofstream MyFile("log.txt");
             // Write to the file
             MyFile <<current_interval[rtn_index+1].id<<endl;
+            MyFile<<"current agent "<<agent_id<<endl;
             MyFile<<agent_id<<endl;
             MyFile <<current_interval[rtn_index+1].is_safe<<endl;
             MyFile<<current_interval[rtn_index+1].start_timestep<<" , "<<current_interval[rtn_index+1].end_timestep<<endl;
@@ -2149,7 +2291,57 @@ list<pair<int,int>> MAPFPlanner::getNeighbors(int location,int direction) {
     neighbors.emplace_back(make_pair(location,direction)); //wait
     return neighbors;
 }
+void MAPFPlanner::log_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id){
+    vector<int> last_position_list;
+    last_position_list.push_back(-1);
+    std::ofstream outfile("log.txt",std::ofstream::app);
+    if (outfile.is_open()){
+        outfile <<"log agent "<<agent_id<<endl;
+        outfile.close();
+    }
+    else{
+        std::ofstream MyFile("log.txt");
+        // Write to the file
+        MyFile <<"log agent "<<agent_id<<endl;
+        // Close the file
+        MyFile.close();
+    }
+    for (int i = 0; i < RHCR_w; i++) {
+        int location;
 
+        if (i == agent_planned_path.size()) {
+            break;
+        }
+
+        location = agent_planned_path[i].first;
+
+        if (location!=last_position_list[last_position_list.size()-1]){
+            last_position_list.push_back(location);
+        }
+
+        int last_position=last_position_list[last_position_list.size()-2];
+        if (last_position==-1){
+            continue;
+        }
+        vector<node_interval> current_intervals=all_interval_nodes[last_position];
+        for (int k=0;k<current_intervals.size();k++){
+            std::ofstream outfile("log.txt",std::ofstream::app);
+            if (outfile.is_open()){
+                outfile <<current_intervals[k].start_timestep<<" , "<<current_intervals[k].end_timestep<<endl;
+                outfile <<current_intervals[k].is_safe<<endl;
+                outfile.close();
+            }
+            else{
+                std::ofstream MyFile("log.txt");
+                // Write to the file
+                MyFile <<current_intervals[k].start_timestep<<" , "<<current_intervals[k].end_timestep<<endl;
+                MyFile<<current_intervals[k].is_safe<<endl;
+                // Close the file
+                MyFile.close();
+            }
+        }
+    }
+}
 /**
  * @brief update the safe intervals of all vertices
  * @param planned_path The planned path of an agent, whose element is a pair of the location and the direction

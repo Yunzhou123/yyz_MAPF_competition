@@ -145,5 +145,6 @@ public:
     void generate_constraints(conflict curr_conflict,std::vector<std::vector<std::vector<int>>>* old_constraints,std::vector<std::vector<std::vector<int>>>* constaint_1,std::vector<std::vector<std::vector<int>>>* constaint_2,vector<int> related_agents,std::vector<std::vector<std::vector<int>>>* old_stay_constraints,std::vector<std::vector<std::vector<int>>>* stay_constaint_1,std::vector<std::vector<std::vector<int>>>* stay_constaint_2);
     void CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_paths,vector<int> related_agents,vector<int>* time_list,bool* find_sol_flag,vector<pair<int,int>>* found_replan_paths,vector<int>* found_time_list,vector<int>* CBS_related_agents);
     void insert_safe_intervals_from_one_path(int agents_id,vector<pair<int,int>> agents_path,vector<int> agents_time);
+    void log_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id);
 };
 
