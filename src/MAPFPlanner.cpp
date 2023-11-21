@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <fstream>
+#include <string>
 using namespace std::chrono;
 int a=1+1;
 /*
@@ -729,7 +730,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
         int sample_time=rand() %time_limit;
         constraints[sample_location][sample_direction].push_back(sample_time);
     }
-    if (env->curr_timestep>5000) {
+    if (env->curr_timestep>2000) {
         // leave empty for testing
     } else if (replan_all_flag==true) {
         /*
@@ -800,6 +801,18 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                               &find_flag, current_agent,constraints,&related_agents,&curent_time_list,true,stay_constraints);
 
                 cout<<"Find flag is "<<find_flag<<endl;
+                std::ofstream outfile("log.txt",std::ofstream::app);
+                if (outfile.is_open()){
+                    outfile <<"findall flag "<<find_flag<<endl;
+                    outfile.close();
+                }
+                else{
+                    std::ofstream MyFile("log.txt");
+                    // Write to the file
+                    MyFile <<"findall flag "<<find_flag<<endl;
+                    // Close the file
+                    MyFile.close();
+                }
                 if (find_flag== true) {
                     agents_time_list[current_agent]=curent_time_list;
                     agents_index[current_agent] = 1;
@@ -856,9 +869,9 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                             vector<int> new_related_agents;
                             vector <int> curent_time_list;
                             bool current_find_flag= false;
-                            if (already_planned_agents[related_agents[n]]==1){
-                                insert_safe_intervals_from_one_path(related_agents[n],agents_path[related_agents[n]],agents_time_list[related_agents[n]]);
-                            }
+                            //if (already_planned_agents[related_agents[n]]==1){
+                              //  insert_safe_intervals_from_one_path(related_agents[n],agents_path[related_agents[n]],agents_time_list[related_agents[n]]);
+                            //}
                             replan_paths[n]=single_agent_plan_SIPP_with_constraints(env->curr_states[related_agents[n]].location,
                                                                                     env->curr_states[related_agents[n]].orientation,
                                                                                     env->goal_locations[related_agents[n]].front().first,all_interval_nodes,&current_find_flag, related_agents[n],constraints,&new_related_agents,&curent_time_list,
@@ -925,31 +938,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                             CBS_terminate_flag= true;
                             for (int n=0;n<related_agents.size();n++){
                                 agents_path[related_agents[n]] = replan_paths[n];
-                                std::ofstream outfile("log.txt",std::ofstream::app);
-                                if (outfile.is_open()){
-                                    outfile <<"before update"<<endl;
-                                }
-                                else{
-                                    std::ofstream MyFile("log.txt");
-                                    // Write to the file
-                                    MyFile<<"update path!"<<endl;
-                                    // Close the file
-                                    MyFile.close();
-                                }
-                                log_safe_intervals(replan_paths[n],related_agents[i]);
-                                SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
-                                if (outfile.is_open()){
-                                    outfile <<"after update"<<endl;
-                                    outfile.close();
-                                }
-                                else{
-                                    std::ofstream MyFile("log.txt");
-                                    // Write to the file
-                                    MyFile<<"after update!"<<endl;
-                                    // Close the file
-                                    MyFile.close();
-                                }
-                                log_safe_intervals(replan_paths[n],related_agents[i]);
+                                SIPP_update_safe_intervals(replan_paths[n],related_agents[n]);
                                 agents_time_list[related_agents[n]]=replan_time_lists[n];
                             }
                         }
@@ -997,31 +986,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                     already_planned_agents[related_agents[n]]=1;
                                     agents_index[related_agents[n]] = 1;
                                     agents_path[related_agents[n]] = found_replan_paths[n];
-                                    std::ofstream outfile("log.txt",std::ofstream::app);
-                                    if (outfile.is_open()){
-                                        outfile <<"before update"<<endl;
-                                    }
-                                    else{
-                                        std::ofstream MyFile("log.txt");
-                                        // Write to the file
-                                        MyFile<<"before update!"<<endl;
-                                        // Close the file
-                                        MyFile.close();
-                                    }
-                                    log_safe_intervals(replan_paths[n],related_agents[i]);
-                                    SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
-                                    if (outfile.is_open()){
-                                        outfile <<"after update"<<endl;
-                                        outfile.close();
-                                    }
-                                    else{
-                                        std::ofstream MyFile("log.txt");
-                                        // Write to the file
-                                        MyFile<<"after update"<<endl;
-                                        // Close the file
-                                        MyFile.close();
-                                    }
-                                    log_safe_intervals(replan_paths[n],related_agents[i]);
+                                    SIPP_update_safe_intervals(found_replan_paths[n],related_agents[n]);
                                     agents_time_list[related_agents[n]]=found_replan_time_lists[n];
                                 }
                             }
@@ -1245,6 +1210,18 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                                 env->goal_locations[current_agent].front().first,all_interval_nodes,&find_flag, current_agent,constraints,&related_agents,&curent_time_list,
                                                                    true,stay_constraints);
                     cout<<"Find flag is "<<find_flag<<endl;
+                    std::ofstream outfile("log.txt",std::ofstream::app);
+                    if (outfile.is_open()){
+                        outfile <<"Replanfind flag "<<find_flag<<endl;
+                        outfile.close();
+                    }
+                    else{
+                        std::ofstream MyFile("log.txt");
+                        // Write to the file
+                        MyFile <<"Replanfind flag "<<find_flag<<endl;
+                        // Close the file
+                        MyFile.close();
+                    }
                     if (find_flag==true) {
                         already_planned_agents[current_agent]=1;
                         agents_path[current_agent] = path;
@@ -1304,9 +1281,9 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 vector<int> new_related_agents;
                                 vector <int> curent_time_list;
                                 bool current_find_flag= false;
-                                if (already_planned_agents[related_agents[n]]==1){
-                                    insert_safe_intervals_from_one_path(related_agents[n],agents_path[related_agents[n]],agents_time_list[related_agents[n]]);
-                                }
+                                //if (already_planned_agents[related_agents[n]]==1){
+                                  //  insert_safe_intervals_from_one_path(related_agents[n],agents_path[related_agents[n]],agents_time_list[related_agents[n]]);
+                                //}
                                 replan_paths[n]=single_agent_plan_SIPP_with_constraints(env->curr_states[related_agents[n]].location,
                                                                                         env->curr_states[related_agents[n]].orientation,
                                                                                         env->goal_locations[related_agents[n]].front().first,all_interval_nodes,&current_find_flag, related_agents[n],constraints,&new_related_agents,&curent_time_list,
@@ -1371,31 +1348,31 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                     agents_index[related_agents[n]]=1;
                                     agents_path[related_agents[n]] = replan_paths[n];
                                     agents_time_list[related_agents[n]]=replan_time_lists[n];
-                                    std::ofstream outfile("log.txt",std::ofstream::app);
-                                    if (outfile.is_open()){
-                                        outfile <<"before update"<<endl;
-                                    }
-                                    else{
-                                        std::ofstream MyFile("log.txt");
+                                    //std::ofstream outfile("log.txt",std::ofstream::app);
+                                    //if (outfile.is_open()){
+                                      //  outfile <<"before update"<<endl;
+                                    //}
+                                    //else{
+                                    //    std::ofstream MyFile("log.txt");
                                         // Write to the file
-                                        MyFile<<"before update"<<endl;
+                                    //    MyFile<<"before update"<<endl;
                                         // Close the file
-                                        MyFile.close();
-                                    }
-                                    log_safe_intervals(replan_paths[n],related_agents[i]);
-                                    SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
-                                    if (outfile.is_open()){
-                                        outfile <<"after update"<<endl;
-                                        outfile.close();
-                                    }
-                                    else{
-                                        std::ofstream MyFile("log.txt");
+                                    //    MyFile.close();
+                                    //}
+                                    //log_safe_intervals(replan_paths[n],related_agents[n]);
+                                    SIPP_update_safe_intervals(replan_paths[n],related_agents[n]);
+                                   // if (outfile.is_open()){
+                                     //   outfile <<"after update"<<endl;
+                                      //  outfile.close();
+                                    //}
+                                    //else{
+                                     //   std::ofstream MyFile("log.txt");
                                         // Write to the file
-                                        MyFile<<"after update!"<<endl;
+                                      //  MyFile<<"after update!"<<endl;
                                         // Close the file
-                                        MyFile.close();
-                                    }
-                                    log_safe_intervals(replan_paths[n],related_agents[i]);
+                                      //  MyFile.close();
+                                    //}
+                                    //log_safe_intervals(replan_paths[n],related_agents[n]);
                                 }
                             }
                             else{
@@ -1441,31 +1418,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                     for (int n=0;n<related_agents.size();n++){
                                         agents_index[related_agents[n]] = 1;
                                         agents_path[related_agents[n]] = found_replan_paths[n];
-                                        std::ofstream outfile("log.txt",std::ofstream::app);
-                                        if (outfile.is_open()){
-                                            outfile <<"before update"<<endl;
-                                        }
-                                        else{
-                                            std::ofstream MyFile("log.txt");
-                                            // Write to the file
-                                            MyFile<<"before update"<<endl;
-                                            // Close the file
-                                            MyFile.close();
-                                        }
-                                        log_safe_intervals(replan_paths[n],related_agents[i]);
-                                        SIPP_update_safe_intervals(replan_paths[n],related_agents[i]);
-                                        if (outfile.is_open()){
-                                            outfile <<"after update"<<endl;
-                                            outfile.close();
-                                        }
-                                        else{
-                                            std::ofstream MyFile("log.txt");
-                                            // Write to the file
-                                            MyFile<<"after update!"<<endl;
-                                            // Close the file
-                                            MyFile.close();
-                                        }
-                                        log_safe_intervals(replan_paths[n],related_agents[i]);
+                                        SIPP_update_safe_intervals(found_replan_paths[n],related_agents[n]);
                                         agents_time_list[related_agents[n]]=found_replan_time_lists[n];
                                     }
                                 }
@@ -1688,6 +1641,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
         if (outfile.is_open()){
             outfile <<"something wrong"<<endl;
             outfile <<current_safe_interval.start_timestep<<","<<current_safe_interval.end_timestep<<endl;
+            outfile<<current_safe_interval.id<<endl;
             outfile.close();
         }
         else{
@@ -1695,6 +1649,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             // Write to the file
             MyFile <<"something wrong"<<endl;
             MyFile<<current_safe_interval.start_timestep<<","<<current_safe_interval.end_timestep<<endl;
+            MyFile<<current_safe_interval.id<<endl;
             // Close the file
             MyFile.close();
         }
@@ -1720,12 +1675,39 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             // Write to the file
             MyFile <<current_interval[rtn_index+1].id<<endl;
             MyFile<<"current agent "<<agent_id<<endl;
-            MyFile<<agent_id<<endl;
             MyFile <<current_interval[rtn_index+1].is_safe<<endl;
             MyFile<<current_interval[rtn_index+1].start_timestep<<" , "<<current_interval[rtn_index+1].end_timestep<<endl;
             // Close the file
             MyFile.close();
         }
+    }
+    else{
+        std::ofstream outfile("log.txt",std::ofstream::app);
+        if (outfile.is_open()){
+            outfile <<"current agent "<<agent_id<<endl;
+            outfile.close();
+        }
+        else{
+            std::ofstream MyFile("log.txt");
+            // Write to the file
+            MyFile<<"current agent "<<agent_id<<endl;
+            MyFile<<agent_id<<endl;
+            // Close the file
+            MyFile.close();
+        }
+    }
+    std::ofstream outfile("log.txt",std::ofstream::app);
+    if (outfile.is_open()){
+        outfile <<"current agent "<<agent_id<<endl;
+        outfile.close();
+    }
+    else{
+        std::ofstream MyFile("log.txt");
+        // Write to the file
+        MyFile<<"current agent "<<agent_id<<endl;
+        MyFile<<agent_id<<endl;
+        // Close the file
+        MyFile.close();
     }
     for (int i=rtn_index+1;i<current_interval.size();i++){
         if (current_interval[i].is_safe== true){
@@ -1737,6 +1719,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             }
         }
     }
+    vector<int> current_related_agents_copy=current_related_agents;
 
     //for (int i=rtn_index+1;i<current_interval.size();i++){
         //if (current_interval[i].is_safe== false){
@@ -1791,6 +1774,8 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
         SIPPNode parent_object=*curr;
         SIPP_node_list_copy.push_back(parent_object);
         if (curr->location == end) {
+            int current_arr_time=curr->arrive_time;
+
             cout<<"find solution!"<<endl;
             *find_flag = true;
             terminate_flag = true;
@@ -1798,10 +1783,15 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             vector<SIPPNode> current_path_SIPP_node;
             int count = 0;
             current_path_SIPP_node.push_back(parent_object);
+            current_related_agents=current_related_agents_copy;
             //cout<<count<<endl;
             while (curr->parent != -1){
                 current_path_SIPP_node.push_back(SIPP_node_list_copy[curr->parent]);
                 curr = &SIPP_node_list_copy[curr->parent];
+                if (curr->safe_interval.end_timestep-(current_arr_time-1)<=3 and curr->next_agent_id!=-1){
+                    current_related_agents.push_back(curr->next_agent_id);
+                    current_arr_time=curr->arrive_time;
+                }
                 count = count+1;
             }
             std::reverse(current_path_SIPP_node.begin(), current_path_SIPP_node.end());
@@ -2033,7 +2023,6 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
                     break;
                 }
             }
-
             vector<node_interval> candidate_intervals = all_interval_nodes[check_candidate];
 
             int intervals_num = candidate_intervals.size();
@@ -2144,6 +2133,10 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
                     }
                     else{
                         int t=chose_t;
+                        if (t<current_interval.start_timestep or t>current_interval.end_timestep or
+                            !current_interval.is_safe){
+                            continue;
+                        }
                         SIPPNode new_node = SIPPNode(t, current_interval, t+getManhattanDistance(check_candidate, end), t, getManhattanDistance(check_candidate, end),
                                                      objects_num-1,check_candidate,i,last_move_pos,next_agent_id);
 
@@ -2231,7 +2224,19 @@ void MAPFPlanner::insert_safe_intervals_from_path(vector<int>agents_id,vector<pa
             }
         }
         if (start_time==-1){
-            return;
+            std::ofstream outfile("log.txt",std::ofstream::app);
+            if (outfile.is_open()){
+                outfile <<"something wrong in the timelist"<<endl;
+                outfile.close();
+            }
+            else{
+                std::ofstream MyFile("log.txt");
+                // Write to the file
+                MyFile <<"something wrong in the timelist"<<endl;
+                // Close the file
+                MyFile.close();
+            }
+            continue;
         }
 
         for (int j=start_time;j<current_agent_path.size();j++){
@@ -2334,6 +2339,7 @@ void MAPFPlanner::log_safe_intervals(vector<pair<int, int>> agent_planned_path, 
         for (int k=0;k<current_intervals.size();k++){
             std::ofstream outfile("log.txt",std::ofstream::app);
             if (outfile.is_open()){
+                outfile <<last_position<<endl;
                 outfile <<current_intervals[k].start_timestep<<" , "<<current_intervals[k].end_timestep<<endl;
                 outfile <<current_intervals[k].is_safe<<endl;
                 outfile.close();
@@ -2341,6 +2347,7 @@ void MAPFPlanner::log_safe_intervals(vector<pair<int, int>> agent_planned_path, 
             else{
                 std::ofstream MyFile("log.txt");
                 // Write to the file
+                MyFile<<last_position<<endl;
                 MyFile <<current_intervals[k].start_timestep<<" , "<<current_intervals[k].end_timestep<<endl;
                 MyFile<<current_intervals[k].is_safe<<endl;
                 // Close the file
