@@ -2028,9 +2028,15 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             int intervals_num = candidate_intervals.size();
 
 
-            if (curr->current_interval_next_pos != -1 and check_candidate == curr->current_interval_next_pos and maximum_leave_time==curr_node.safe_interval.end_timestep) {
-                maximum_leave_time = maximum_leave_time-1;
+            if (curr->current_interval_next_pos != -1 and check_candidate == curr->current_interval_next_pos) {
+                if (maximum_leave_time>=curr_node.safe_interval.end_timestep){
+                    maximum_leave_time = curr_node.safe_interval.end_timestep-1;
+                }
             }
+            else if (maximum_leave_time>=curr_node.safe_interval.end_timestep){
+                maximum_leave_time=curr_node.safe_interval.end_timestep;
+            }
+
             if (minimum_leave_time>maximum_leave_time){
                 continue;
             }
@@ -2135,6 +2141,9 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
                         int t=chose_t;
                         if (t<current_interval.start_timestep or t>current_interval.end_timestep or
                             !current_interval.is_safe){
+                            continue;
+                        }
+                        if (t-1>maximum_leave_time){
                             continue;
                         }
                         SIPPNode new_node = SIPPNode(t, current_interval, t+getManhattanDistance(check_candidate, end), t, getManhattanDistance(check_candidate, end),
