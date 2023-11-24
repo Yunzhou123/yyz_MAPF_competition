@@ -4,7 +4,7 @@
 class MDDNode 
 {
 public:
-        MDDNode(int currloc, MDDNode* parent) 
+        MDDNode(pair<int,int> currloc, MDDNode* parent) 
         {
             location = currloc;
             if (parent != nullptr) {
@@ -15,7 +15,7 @@ public:
             }
         }
 
-        int location;
+        pair<int,int> location;
         int level;
         int cost = 0; // cost to reach this node
 
@@ -46,7 +46,7 @@ public:
         ~MDD();
 }
 
-// std::ostream& operator<<(std::ostream& os, const MDD& mdd);
+std::ostream& operator<<(std::ostream& os, const MDD& mdd);
 
 // TODO: discuss whether we need SyncNode class
 

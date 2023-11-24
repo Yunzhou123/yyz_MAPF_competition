@@ -7,6 +7,7 @@
 #include <string>
 using namespace std::chrono;
 int a=1+1;
+
 /*
     Assume every agents' path start from the same time t
     the length of path may various
@@ -89,6 +90,7 @@ vector<struct conflict> MAPFPlanner::detect_conflict(vector<int>agent_id, vector
     }
     return v;
 }
+
 int compute_solution_cost(vector<pair<int,int>>* replan_paths, int agent_num){
     int cost=0;
     for (int i=0;i<agent_num;i++){
@@ -96,6 +98,7 @@ int compute_solution_cost(vector<pair<int,int>>* replan_paths, int agent_num){
     }
     return cost;
 }
+
 void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_paths,vector<int> related_agents,vector<int>* time_list,bool* find_sol_flag,vector<pair<int,int>>* found_replan_paths,vector<int>* found_time_list,vector<int>* CBS_related_agents){
     cout<<"start to use CBS!"<<endl;
     std::vector<std::vector<std::vector<int>>> initial_constraints[related_agents.size()];
@@ -290,6 +293,7 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
     }
     *CBS_related_agents=new_CBS_related_agents;
 }
+
 void MAPFPlanner::generate_constraints(conflict curr_conflict,std::vector<std::vector<std::vector<int>>>* old_constraints,std::vector<std::vector<std::vector<int>>>* constaint_1,std::vector<std::vector<std::vector<int>>>* constaint_2,vector<int> related_agents,std::vector<std::vector<std::vector<int>>>* old_stay_constraints,std::vector<std::vector<std::vector<int>>>* stay_constaint_1,std::vector<std::vector<std::vector<int>>>* stay_constaint_2){
     std::vector<std::vector<std::vector<int>>>* new_constaint_1=new std::vector<std::vector<std::vector<int>>>[related_agents.size()];
     std::vector<std::vector<std::vector<int>>>* new_constaint_2=new std::vector<std::vector<std::vector<int>>>[related_agents.size()];
@@ -395,11 +399,7 @@ void MAPFPlanner::generate_constraints(conflict curr_conflict,std::vector<std::v
     }
 }
 
-/**
- * @brief helper function
- * @param array The array to sort
- * @return The indices of the sorted array in ascending order
-*/
+/// sort the array in ascending order and return the index
 template<typename T> std::vector<int> argsort(const std::vector<T>& array)
 {
     const int array_len(array.size());
@@ -701,6 +701,7 @@ void MAPFPlanner::insert_safe_intervals(int location, int time){
     }
     all_interval_nodes[location]=current_node_intervals;
 }
+
 /// plan and refine the paths, and generate actions for each agent
 void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 {
@@ -1622,6 +1623,7 @@ void MAPFPlanner::removeDuplicates(std::vector<int>& nums) {
 
     nums = result;
 }
+
 vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int start, int start_direct, int end,vector<node_interval>* all_interval_nodes, bool* find_flag,int agent_id, std::vector<std::vector<std::vector<int>>> constraints,vector<int>* related_agents,vector<int>* current_time_list,bool update_flag,std::vector<std::vector<std::vector<int>>> stay_constraints) {
 
     int start_time=env->curr_timestep;
@@ -2220,6 +2222,7 @@ int MAPFPlanner::getManhattanDistance(int loc1, int loc2)
     int loc2_y = loc2%env->cols;
     return abs(loc1_x - loc2_x) + abs(loc1_y - loc2_y);
 }
+
 void MAPFPlanner::insert_safe_intervals_from_path(vector<int>agents_id,vector<pair<int,int>>* agents_path,vector<int>* agents_time){
     for (int i=0;i<agents_id.size();i++){
         int current_id=agents_id[i];
@@ -2254,6 +2257,7 @@ void MAPFPlanner::insert_safe_intervals_from_path(vector<int>agents_id,vector<pa
         }
     }
 }
+
 void MAPFPlanner::insert_safe_intervals_from_one_path(int agents_id,vector<pair<int,int>> agents_path,vector<int> agents_time){
     int current_id=agents_id;
     vector<pair<int,int>> current_agent_path=agents_path;
@@ -2274,6 +2278,7 @@ void MAPFPlanner::insert_safe_intervals_from_one_path(int agents_id,vector<pair<
         insert_safe_intervals(current_agent_path[j].first,current_time_list[j]);
     }
 }
+
 bool MAPFPlanner::validateMove(int loc, int loc2) {
 
     int loc_x = loc/env->cols;
@@ -2312,6 +2317,7 @@ list<pair<int,int>> MAPFPlanner::getNeighbors(int location,int direction) {
     neighbors.emplace_back(make_pair(location,direction)); //wait
     return neighbors;
 }
+
 void MAPFPlanner::log_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id){
     vector<int> last_position_list;
     last_position_list.push_back(-1);
@@ -2365,12 +2371,7 @@ void MAPFPlanner::log_safe_intervals(vector<pair<int, int>> agent_planned_path, 
         }
     }
 }
-/**
- * @brief update the safe intervals of all vertices
- * @param planned_path The planned path of an agent, whose element is a pair of the location and the direction
- * @param current_time_step The current time step
- * @param rhcr_w The time interval we want to resolve conflicts
-*/
+
 void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id) {
     vector<int> last_position_list;
     last_position_list.push_back(-1);
@@ -2466,4 +2467,3 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
         }
     }
 }
-

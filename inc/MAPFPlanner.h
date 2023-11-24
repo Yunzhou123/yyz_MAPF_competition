@@ -2,6 +2,7 @@
 #include <ctime>
 #include "SharedEnv.h"
 #include "ActionModel.h"
+
 struct node_interval{
     bool is_safe; // True means safe intervals,False means non-safe intervals
     int start_timestep;
@@ -11,6 +12,7 @@ struct node_interval{
     node_interval(bool _is_safe,int _start_timestep,int _end_timestep,int _id, int _from_where):
             is_safe(_is_safe),start_timestep(_start_timestep),end_timestep(_end_timestep),id(_id),from_where(_from_where) {};
 };
+
 struct conflict{
     int location;
     int dest;  //can ignore if type == 0
@@ -58,8 +60,8 @@ struct CBS_node{
     vector<pair<int,int>>* replan_paths;
     vector<int>* time_list;
 
-    std::vector<std::vector<std::vector<int>>>* constraints;
-    std::vector<std::vector<std::vector<int>>>* stay_constraints;
+    vector<vector<vector<int>>>* constraints;
+    vector<vector<vector<int>>>* stay_constraints;
     int agent_num;
     CBS_node (int _conflict_num,int _solution_cost,vector<conflict> _conflicts,vector<pair<int,int>>* _replan_paths,std::vector<std::vector<std::vector<int>>>* _constraints,vector<int>* _time_list,int _agent_num,std::vector<std::vector<std::vector<int>>>* _stay_constraints){
         conflict_num=_conflict_num;
@@ -68,8 +70,8 @@ struct CBS_node{
         agent_num=_agent_num;
         replan_paths=new vector<pair<int,int>>[agent_num];
         time_list=new vector<int>[agent_num];
-        constraints=new std::vector<std::vector<std::vector<int>>>[agent_num];
-        stay_constraints=new std::vector<std::vector<std::vector<int>>>[agent_num];
+        constraints=new vector<vector<vector<int>>>[agent_num];
+        stay_constraints=new vector<vector<vector<int>>>[agent_num];
         for (int i=0;i<agent_num;i++){
             replan_paths[i]=_replan_paths[i];
             constraints[i]=  _constraints[i];
@@ -102,10 +104,10 @@ public:
     virtual void plan(int time_limit, std::vector<Action> & plan);
 
     // Start kit dummy implementation
-    std::list<pair<int,int>>single_agent_plan_yyz(int start,int start_direct, int end);
-    std::vector<pair<int,int>>single_agent_plan(int start,int start_direct, int end);
+    list<pair<int,int>>single_agent_plan_yyz(int start,int start_direct, int end);
+    vector<pair<int,int>>single_agent_plan(int start,int start_direct, int end);
     int getManhattanDistance(int loc1, int loc2);
-    std::list<pair<int,int>> getNeighbors(int location, int direction);
+    list<pair<int,int>> getNeighbors(int location, int direction);
     bool validateMove(int loc,int loc2);
 
     // End kit dummy implementation
@@ -121,14 +123,11 @@ public:
 
     vector<int> map;
     vector<int> index;
-    //vector<pair<int,int>>* occupy_id;  // use to record after the i-th safe interval, which agent comes. Start with -1 if the safe interval starts from 0. End with -1
     
     vector<pair<int,int>>* agents_path;
     vector<int>* agents_time_list;
-    //vector<pair<int,int>>* safe_intervals;
     vector<node_interval>* all_interval_nodes;
-    //vector<pair<int,int>>* last_move_pos;
-    void removeDuplicates(std::vector<int>& nums);
+    void removeDuplicates(vector<int>& nums);
     void map_index_to_vec_index(int map_h, int map_w, int &vec_index);
     void vec_index_to_map_index(int &map_h, int &map_w, int vec_index);
     vector<struct conflict> detect_conflict(vector<int>agent_id, vector<pair<int, int>>* agents_path,int start_time);
@@ -141,8 +140,9 @@ public:
     void insert_safe_intervals(int location, int time);
     void SIPP_update_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id);
     vector<int>*  generate_random_constraint();
+
     void insert_safe_intervals_from_path(vector<int>agents_id,vector<pair<int,int>>* agents_path,vector<int>* current_time_list);
-    void generate_constraints(conflict curr_conflict,std::vector<std::vector<std::vector<int>>>* old_constraints,std::vector<std::vector<std::vector<int>>>* constaint_1,std::vector<std::vector<std::vector<int>>>* constaint_2,vector<int> related_agents,std::vector<std::vector<std::vector<int>>>* old_stay_constraints,std::vector<std::vector<std::vector<int>>>* stay_constaint_1,std::vector<std::vector<std::vector<int>>>* stay_constaint_2);
+    void generate_constraints(conflict curr_conflict,vector<vector<vector<int>>>* old_constraints,vector<vector<vector<int>>>* constaint_1,vector<vector<vector<int>>>* constaint_2,vector<int> related_agents,std::vector<std::vector<std::vector<int>>>* old_stay_constraints,std::vector<std::vector<std::vector<int>>>* stay_constaint_1,vector<vector<vector<int>>>* stay_constaint_2);
     void CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_paths,vector<int> related_agents,vector<int>* time_list,bool* find_sol_flag,vector<pair<int,int>>* found_replan_paths,vector<int>* found_time_list,vector<int>* CBS_related_agents);
     void insert_safe_intervals_from_one_path(int agents_id,vector<pair<int,int>> agents_path,vector<int> agents_time);
     void log_safe_intervals(vector<pair<int, int>> agent_planned_path, int agent_id);
