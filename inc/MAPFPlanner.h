@@ -1,7 +1,8 @@
 #pragma once
-#include <ctime>
+#include "common.h"
 #include "SharedEnv.h"
 #include "ActionModel.h"
+#include "CBSHeuristic.h"
 
 struct node_interval{
     bool is_safe; // True means safe intervals,False means non-safe intervals
@@ -45,6 +46,7 @@ struct SIPPNode {
     SIPPNode(int _arrive_time,node_interval _safe_interval,int _f, int _g, int _h, int _parent,int _location,int _arrive_dir,int _current_interval_next_pos,int _agent_id):
             arrive_time(_arrive_time),safe_interval(_safe_interval),f(_f),g(_g),h(_h),parent(_parent),location(_location),arrive_dir(_arrive_dir),current_interval_next_pos(_current_interval_next_pos),next_agent_id(_agent_id) {} ;
 };
+
 struct SIPP_cmp
 {
     bool operator()(SIPPNode a, SIPPNode b)
@@ -53,41 +55,7 @@ struct SIPP_cmp
         else return a.f > b.f;
     }
 };
-struct CBS_node{
-    int conflict_num;
-    int solution_cost;
-    vector<conflict> conflicts;
-    vector<pair<int,int>>* replan_paths;
-    vector<int>* time_list;
 
-    vector<vector<vector<int>>>* constraints;
-    vector<vector<vector<int>>>* stay_constraints;
-    int agent_num;
-    CBS_node (int _conflict_num,int _solution_cost,vector<conflict> _conflicts,vector<pair<int,int>>* _replan_paths,std::vector<std::vector<std::vector<int>>>* _constraints,vector<int>* _time_list,int _agent_num,std::vector<std::vector<std::vector<int>>>* _stay_constraints){
-        conflict_num=_conflict_num;
-        solution_cost=_solution_cost;
-        conflicts=_conflicts;
-        agent_num=_agent_num;
-        replan_paths=new vector<pair<int,int>>[agent_num];
-        time_list=new vector<int>[agent_num];
-        constraints=new vector<vector<vector<int>>>[agent_num];
-        stay_constraints=new vector<vector<vector<int>>>[agent_num];
-        for (int i=0;i<agent_num;i++){
-            replan_paths[i]=_replan_paths[i];
-            constraints[i]=  _constraints[i];
-            stay_constraints[i]=_stay_constraints[i];
-            time_list[i]=_time_list[i];
-        }
-    }
-};
-struct CBS_cmp
-{
-    bool operator()(CBS_node a, CBS_node b)
-    {
-        if(a.solution_cost == b.solution_cost) return a.conflict_num <= b.conflict_num;
-        else return a.solution_cost > b.solution_cost;
-    }
-};
 class MAPFPlanner
 {
 public:
