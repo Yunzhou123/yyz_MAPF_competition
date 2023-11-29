@@ -1789,7 +1789,22 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
                 current_path_SIPP_node.push_back(SIPP_node_list_copy[curr->parent]);
                 curr = &SIPP_node_list_copy[curr->parent];
                 if (curr->safe_interval.end_timestep-(current_arr_time-1)<=3 and curr->next_agent_id!=-1){
+                    int interval_index=-1;
+                    compute_current_interval(all_interval_nodes[curr->location],curr->arrive_time,&interval_index);
                     current_related_agents.push_back(curr->next_agent_id);
+                    for (int z=interval_index+1;z<all_interval_nodes[curr->location].size();z++){
+                        if (all_interval_nodes[curr->location][z].is_safe==true){
+                            break;
+                        }
+                        else if (all_interval_nodes[curr->location][z].start_timestep>current_arr_time+2){
+                            break;
+                        }
+                        else{
+                            if (all_interval_nodes[curr->location][z].id!=-1){
+                                current_related_agents.push_back(all_interval_nodes[curr->location][z].id);
+                            }
+                        }
+                    }
                     current_arr_time=curr->arrive_time;
                 }
                 count = count+1;
