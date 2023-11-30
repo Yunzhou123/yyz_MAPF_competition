@@ -101,7 +101,7 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
     std::vector<std::vector<std::vector<int>>> initial_constraints[related_agents.size()];
     std::vector<std::vector<std::vector<int>>> initial_stay_constraints[related_agents.size()];
     vector<int> new_CBS_related_agents;
-    int select_neigh_num=10;
+    int select_neigh_num=env->num_of_agents;
 
     *find_sol_flag= false;
     cout<<related_agents.size()<<endl;
@@ -122,6 +122,7 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
     CBS_node curr_node = open_list.top();
     open_list.pop();
     while (curr_node.conflict_num!=0){
+        cout<<time_list->size()<<endl;
         cout<<curr_node.conflict_num<<endl;
         int random = rand() % curr_node.conflict_num;
         conflict select_conflict=curr_node.conflicts[random];
@@ -154,8 +155,8 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
         for (int i=0;i<related_agents.size();i++){
             new_replan_path_1[i]=replan_paths[i];
             new_replan_path_2[i]=replan_paths[i];
-            new_time_list_1[i]=time_list[i];
-            new_time_list_2[i]=time_list[i];
+            new_time_list_1[i]=time_list[related_agents[i]];
+            new_time_list_2[i]=time_list[related_agents[i]];
         }
         bool find_flag_case1= true;
         bool find_flag_case2= true;
@@ -234,6 +235,7 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
                 found_replan_paths[j]=curr_node.replan_paths[j];
                 found_time_list[j]=curr_node.time_list[j];
             }
+            cout<<"return!"<<endl;
             break;
         }
         cout<<"phase 3"<<endl;
@@ -281,9 +283,14 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
                         MyFile.close();
                     }
                 }
+
                 found_replan_paths[j]=curr_node.replan_paths[j];
                 found_time_list[j]=curr_node.time_list[j];
-
+                vector<int> current_time_list;
+                for (int t=0;t<found_replan_paths[j].size();t++){
+                    current_time_list.push_back(env->curr_timestep+t);
+                }
+                found_time_list[j]=current_time_list;
             }
             break;
         }
@@ -482,8 +489,8 @@ void MAPFPlanner::initialize(int preprocess_time_limit)
 
     priority_order = new_order;
     agent_path_index = new_agent_path_index;
-    RHCR_w = 18;
     RHCR_h = 15;
+    RHCR_w = 18;
     replan_flag = false;
     plan_first_time_flag= true;
     agents_path = new vector<pair<int,int>>[env->num_of_agents];
@@ -730,7 +737,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
         int sample_time=rand() %time_limit;
         constraints[sample_location][sample_direction].push_back(sample_time);
     }
-    if (env->curr_timestep>2000) {
+    if (env->curr_timestep>5000) {
         // leave empty for testing
     } else if (replan_all_flag==true) {
         /*
@@ -850,7 +857,6 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                 else {
                     bool CBS_success_flag= false;
                     bool CBS_terminate_flag= false;
-                    int CBS_replan_count=0;
                     related_agents.insert(related_agents.begin(),current_agent);
                     while (CBS_terminate_flag== false){
                         insert_safe_intervals_from_path(related_agents,agents_path,agents_time_list);
@@ -931,6 +937,12 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                             // Close the file
                             MyFile.close();
                         }
+                       // if (replan_find_flag==true){
+                        //    for (int a=0;a<related_agents.size();a++){
+                        //        agents_time_list[related_agents[a]]=replan_time_lists[a];
+                        //        agents_path[related_agents[a]]=replan_paths[a];
+                        //    }
+                        //}
                         if  (conflicts.size()==0 and replan_find_flag== true){
                             agents_index[current_agent] = 1;
                             find_flag=true;
@@ -948,35 +960,40 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                             vector<int> found_replan_time_lists[related_agents.size()];
                             vector<int> CBS_related_agents;
                             CBS(conflicts,replan_paths,related_agents,agents_time_list,&find_sol_flag,found_replan_paths,found_replan_time_lists,&CBS_related_agents);
-                            std::ofstream outfile("log.txt",std::ofstream::app);
-                            if (outfile.is_open()){
-                                outfile <<"The neighborhood agents: "<<endl;
-                                for (int z=0;z<CBS_related_agents.size();z++){
-                                    outfile <<CBS_related_agents[z]<<endl;
-                                }
-                                outfile.close();
-                            }
-                            else{
-                                std::ofstream MyFile("log.txt");
-                                // Write to the file
-                                MyFile<<"The neighborhood agents: "<<endl;
-                                for (int z=0;z<CBS_related_agents.size();z++){
-                                    MyFile <<CBS_related_agents[z]<<endl;
-                                }
-                                // Close the file
-                                MyFile.close();
-                            }
+
                             if (find_sol_flag== true){
                                 CBS_terminate_flag= true;
                                 std::ofstream outfile("log.txt",std::ofstream::app);
                                 if (outfile.is_open()){
-                                    outfile <<"update path! "<<endl;
+                                    outfile <<"The neighborhood agents: "<<endl;
+                                    for (int z=0;z<CBS_related_agents.size();z++){
+                                        outfile <<CBS_related_agents[z]<<endl;
+                                    }
+                                    for (int n=0;n<related_agents.size();n++){
+                                        cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
+                                        cout<<"path length "<< found_replan_paths[n].size()<<endl;
+                                        for (int m=0;m<<found_replan_time_lists[n].size();m++){
+                                            outfile<<"time "<<found_replan_time_lists[n][m]<<endl;
+                                            outfile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
+                                        }
+                                    }
                                     outfile.close();
                                 }
                                 else{
                                     std::ofstream MyFile("log.txt");
                                     // Write to the file
-                                    MyFile<<"update path!"<<endl;
+                                    MyFile<<"The neighborhood agents: "<<endl;
+                                    for (int z=0;z<CBS_related_agents.size();z++){
+                                        MyFile <<CBS_related_agents[z]<<endl;
+                                    }
+                                    for (int n=0;n<related_agents.size();n++){
+                                        cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
+                                        cout<<"path length "<< found_replan_paths[n].size()<<endl;
+                                        for (int m=0;m<found_replan_time_lists[n].size();m++){
+                                            MyFile<<"time "<<found_replan_time_lists[n][m]<<endl;
+                                            MyFile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
+                                        }
+                                    }
                                     // Close the file
                                     MyFile.close();
                                 }
@@ -1008,9 +1025,6 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 }
 
                                 agents_index[current_agent] = 0;
-                            }
-                            if (CBS_replan_count>3){
-                                CBS_terminate_flag= true;
                             }
                         }
                         }
@@ -1266,7 +1280,6 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                         bool CBS_replan_flag= false;
                         related_agents.insert(related_agents.begin(),current_agent);
                         bool CBS_terminate_flag= false;
-                        int CBS_replan_count=0;
                         while (CBS_terminate_flag== false){
                             insert_safe_intervals_from_path(related_agents,agents_path,agents_time_list);
                             vector<pair<int,int>>* replan_paths;
@@ -1295,6 +1308,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 if (outfile.is_open()){
                                     outfile <<"agent "<<related_agents[n]<<endl;
                                     outfile <<env->curr_timestep<<endl;
+                                    outfile <<"replan flag "<<current_find_flag<<endl;
                                     outfile.close();
                                 }
                                 else{
@@ -1302,6 +1316,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                     // Write to the file
                                     MyFile <<"agent "<<related_agents[n]<<endl;
                                     MyFile<< env->curr_timestep<<endl;
+                                    MyFile<<"replan flag "<<current_find_flag<<endl;
                                     // Close the file
                                     MyFile.close();
                                 }
@@ -1324,6 +1339,12 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 replan_time_lists[n]=curent_time_list;
                                 solution_cost=solution_cost+replan_paths[n].size();
                             }
+                            //if (replan_find_flag==true){
+                              //  for (int a=0;a<related_agents.size();a++){
+                               //     agents_time_list[related_agents[a]]=replan_time_lists[a];
+                               //     agents_path[related_agents[a]]=replan_paths[a];
+                               // }
+                            //}
                             vector<conflict> conflicts=detect_conflict(related_agents, replan_paths, env->curr_timestep);
 
                             cout<<"The number of conflicts is "<<conflicts.size()<<endl;
@@ -1381,34 +1402,38 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 vector<int> found_replan_time_lists[related_agents.size()];
                                 vector<int> CBS_related_agents;
                                 CBS(conflicts,replan_paths,related_agents,agents_time_list,&find_sol_flag,found_replan_paths,found_replan_time_lists,&CBS_related_agents);
-                                std::ofstream outfile("log.txt",std::ofstream::app);
-                                if (outfile.is_open()){
-                                    outfile <<"The neighborhood agents: "<<endl;
-                                    for (int z=0;z<CBS_related_agents.size();z++){
-                                        outfile <<CBS_related_agents[z]<<endl;
-                                    }
-                                    outfile.close();
-                                }
-                                else{
-                                    std::ofstream MyFile("log.txt");
-                                    // Write to the file
-                                    MyFile<<"The neighborhood agents: "<<endl;
-                                    for (int z=0;z<CBS_related_agents.size();z++){
-                                        MyFile <<CBS_related_agents[z]<<endl;
-                                    }
-                                    // Close the file
-                                    MyFile.close();
-                                }
                                 if (find_sol_flag== true){
                                     std::ofstream outfile("log.txt",std::ofstream::app);
                                     if (outfile.is_open()){
-                                        outfile <<"update path! "<<endl;
+                                        outfile <<"The neighborhood agents: "<<endl;
+                                        for (int z=0;z<CBS_related_agents.size();z++){
+                                            outfile <<CBS_related_agents[z]<<endl;
+                                        }
+                                        for (int n=0;n<related_agents.size();n++){
+                                            cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
+                                            cout<<"path length "<< found_replan_paths[n].size()<<endl;
+                                            for (int m=0;m<replan_time_lists[n].size();m++){
+                                                outfile<<"time "<<found_replan_time_lists[n][m]<<endl;
+                                                outfile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
+                                            }
+                                        }
                                         outfile.close();
                                     }
                                     else{
                                         std::ofstream MyFile("log.txt");
                                         // Write to the file
-                                        MyFile<<"update path!"<<endl;
+                                        MyFile<<"The neighborhood agents: "<<endl;
+                                        for (int z=0;z<CBS_related_agents.size();z++){
+                                            MyFile <<CBS_related_agents[z]<<endl;
+                                        }
+                                        for (int n=0;n<related_agents.size();n++){
+                                            cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
+                                            cout<<"path length "<< found_replan_paths[n].size()<<endl;
+                                            for (int m=0;m<replan_time_lists[n].size();m++){
+                                                MyFile<<"time "<<found_replan_time_lists[n][m]<<endl;
+                                                MyFile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
+                                            }
+                                        }
                                         // Close the file
                                         MyFile.close();
                                     }
@@ -1438,10 +1463,6 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                     }
                                     agents_index[current_agent] = 0;
                                 }
-                            }
-                            CBS_replan_count=CBS_replan_count+1;
-                            if (CBS_replan_count>3){
-                                CBS_terminate_flag= true;
                             }
                         }
                         if (CBS_replan_flag== false){
