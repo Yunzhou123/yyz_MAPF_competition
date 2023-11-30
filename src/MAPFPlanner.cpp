@@ -97,20 +97,20 @@ int compute_solution_cost(vector<pair<int,int>>* replan_paths, int agent_num){
     return cost;
 }
 void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_paths,vector<int> related_agents,vector<int>* time_list,bool* find_sol_flag,vector<pair<int,int>>* found_replan_paths,vector<int>* found_time_list,vector<int>* CBS_related_agents){
-    cout<<"start to use CBS!"<<endl;
+    //cout<<"start to use CBS!"<<endl;
     std::vector<std::vector<std::vector<int>>> initial_constraints[related_agents.size()];
     std::vector<std::vector<std::vector<int>>> initial_stay_constraints[related_agents.size()];
     vector<int> new_CBS_related_agents;
     int select_neigh_num=env->num_of_agents;
 
     *find_sol_flag= false;
-    cout<<related_agents.size()<<endl;
+    //cout<<related_agents.size()<<endl;
     for (int i=0;i<related_agents.size();i++){
         std::vector<std::vector<std::vector<int>>> constraint(env->cols*env->rows, std::vector<std::vector<int>>(4));
         std::vector<std::vector<std::vector<int>>> stay_constraint(env->cols*env->rows, std::vector<std::vector<int>>(1));
         initial_constraints[i]=constraint;
         initial_stay_constraints[i]=stay_constraint;
-        cout<<related_agents[i]<<endl;
+     //   cout<<related_agents[i]<<endl;
         new_CBS_related_agents.push_back(related_agents[i]);
     }
     int conflict_num=conflicts.size();
@@ -122,8 +122,8 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
     CBS_node curr_node = open_list.top();
     open_list.pop();
     while (curr_node.conflict_num!=0){
-        cout<<time_list->size()<<endl;
-        cout<<curr_node.conflict_num<<endl;
+       // cout<<time_list->size()<<endl;
+        //cout<<curr_node.conflict_num<<endl;
         int random = rand() % curr_node.conflict_num;
         conflict select_conflict=curr_node.conflicts[random];
         //std::ofstream outfile("log.txt",std::ofstream::app);
@@ -144,7 +144,7 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
         std::vector<std::vector<std::vector<int>>>* constraint2=new std::vector<std::vector<std::vector<int>>>[related_agents.size()];
         std::vector<std::vector<std::vector<int>>>* stay_constraint1=new std::vector<std::vector<std::vector<int>>>[related_agents.size()];
         std::vector<std::vector<std::vector<int>>>* stay_constraint2=new std::vector<std::vector<std::vector<int>>>[related_agents.size()];
-        cout<<"phase 1"<<endl;
+      //  cout<<"phase 1"<<endl;
         generate_constraints(select_conflict,curr_node.constraints,constraint1,constraint2,related_agents,curr_node.stay_constraints,stay_constraint1,stay_constraint2);
         vector<pair<int,int>>* new_replan_path_1=new vector<pair<int,int>>[related_agents.size()];
         vector<pair<int,int>>* new_replan_path_2=new vector<pair<int,int>>[related_agents.size()];
@@ -211,7 +211,7 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
                 find_flag_case2= false;
             }
         }
-        cout<<"phase 2"<<endl;
+      //  cout<<"phase 2"<<endl;
         if (find_flag_case1== true){
             vector<conflict> conflicts=detect_conflict(related_agents, new_replan_path_1, env->curr_timestep);
             int conflict_num=conflicts.size();
@@ -227,7 +227,7 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
             open_list.push(new_node);
         }
         if (open_list.size()==0){
-            cout<<"not feasible!"<<endl;
+       //     cout<<"not feasible!"<<endl;
             found_replan_paths=new vector<pair<int,int>>[related_agents.size()];
             found_time_list=new vector<int>[related_agents.size()];
             *find_sol_flag= false;
@@ -235,53 +235,53 @@ void MAPFPlanner::CBS(vector<conflict> conflicts,vector<pair<int,int>>* replan_p
                 found_replan_paths[j]=curr_node.replan_paths[j];
                 found_time_list[j]=curr_node.time_list[j];
             }
-            cout<<"return!"<<endl;
+       //     cout<<"return!"<<endl;
             break;
         }
-        cout<<"phase 3"<<endl;
+    //    cout<<"phase 3"<<endl;
         curr_node = open_list.top();
         open_list.pop();
         if (curr_node.conflict_num==0){
             *find_sol_flag=true;
-            cout<<"found solution!"<<endl;
-            std::ofstream outfile("log.txt",std::ofstream::app);
-            if (outfile.is_open()){
-                outfile <<"find valid solution!"<<endl;
-                outfile.close();
-            }
-            else{
-                std::ofstream MyFile("log.txt");
+           // cout<<"found solution!"<<endl;
+            //std::ofstream outfile("log.txt",std::ofstream::app);
+            //if (outfile.is_open()){
+            //    outfile <<"find valid solution!"<<endl;
+            //    outfile.close();
+            //}
+            //else{
+            //    std::ofstream MyFile("log.txt");
                 // Write to the file
-                MyFile <<"find valid solution!"<<endl;
+            //    MyFile <<"find valid solution!"<<endl;
                 // Close the file
-                MyFile.close();
-            }
+            //    MyFile.close();
+            //}
             for (int j=0;j<related_agents.size();j++){
-                std::ofstream outfile("log.txt",std::ofstream::app);
-                if (outfile.is_open()){
-                    outfile <<"agent "<<related_agents[j]<<endl;
-                    outfile.close();
-                }
-                else{
-                    std::ofstream MyFile("log.txt");
+                //std::ofstream outfile("log.txt",std::ofstream::app);
+                //if (outfile.is_open()){
+                //    outfile <<"agent "<<related_agents[j]<<endl;
+                //    outfile.close();
+                //}
+                //else{
+                //    std::ofstream MyFile("log.txt");
                     // Write to the file
-                    MyFile <<"agent "<<related_agents[j]<<endl;
+                //    MyFile <<"agent "<<related_agents[j]<<endl;
                     // Close the file
-                    MyFile.close();
-                }
+                //    MyFile.close();
+                //}
                 for (int p=0;p<curr_node.replan_paths[j].size();p++){
-                    std::ofstream outfile("log.txt",std::ofstream::app);
-                    if (outfile.is_open()){
-                        outfile <<"replan position "<<curr_node.replan_paths[j][p].first <<" replan direction"<<curr_node.replan_paths[j][p].second<<endl;
-                        outfile.close();
-                    }
-                    else{
-                        std::ofstream MyFile("log.txt");
+                    //std::ofstream outfile("log.txt",std::ofstream::app);
+                    //if (outfile.is_open()){
+                    //    outfile <<"replan position "<<curr_node.replan_paths[j][p].first <<" replan direction"<<curr_node.replan_paths[j][p].second<<endl;
+                    //    outfile.close();
+                    //}
+                    //else{
+                    //    std::ofstream MyFile("log.txt");
                         // Write to the file
-                        MyFile <<"replan position "<<curr_node.replan_paths[j][p].first <<" replan direction"<<curr_node.replan_paths[j][p].second<<endl;
+                     //   MyFile <<"replan position "<<curr_node.replan_paths[j][p].first <<" replan direction"<<curr_node.replan_paths[j][p].second<<endl;
                         // Close the file
-                        MyFile.close();
-                    }
+                    //    MyFile.close();
+                    //}
                 }
 
                 found_replan_paths[j]=curr_node.replan_paths[j];
@@ -489,8 +489,8 @@ void MAPFPlanner::initialize(int preprocess_time_limit)
 
     priority_order = new_order;
     agent_path_index = new_agent_path_index;
-    RHCR_h = 15;
-    RHCR_w = 18;
+    RHCR_h = (int)(0.5*sqrt(env->rows*env->rows+env->cols*env->cols));
+    RHCR_w = RHCR_h+3;
     replan_flag = false;
     plan_first_time_flag= true;
     agents_path = new vector<pair<int,int>>[env->num_of_agents];
@@ -679,21 +679,21 @@ void MAPFPlanner::insert_safe_intervals(int location, int time){
         }
     }
     else { //Seems impossible to happen
-        std::ofstream outfile("log.txt",std::ofstream::app);
-        if (outfile.is_open()){
-            outfile <<"something wrong happens!"<<endl;
-            outfile <<location<<endl;
-            outfile.close();
-        }
-        else{
-            std::ofstream MyFile("log.txt");
+        //std::ofstream outfile("log.txt",std::ofstream::app);
+        //if (outfile.is_open()){
+        //    outfile <<"something wrong happens!"<<endl;
+        //    outfile <<location<<endl;
+        //    outfile.close();
+        //}
+        //else{
+        //    std::ofstream MyFile("log.txt");
             // Write to the file
-            MyFile <<"something wrong happens!"<<endl;
-            MyFile<<location<<endl;
+        //    MyFile <<"something wrong happens!"<<endl;
+        //    MyFile<<location<<endl;
             // Close the file
-            MyFile.close();
-        }
-        cout<<"something wrong happens!"<<endl;
+         //   MyFile.close();
+        //}
+      //  cout<<"something wrong happens!"<<endl;
         int id_copy=current_node_intervals[index_num].id;
         int from_where_copy=current_node_intervals[index_num].from_where;
         int end_time_copy=current_node_intervals[index_num].end_timestep;
@@ -716,13 +716,13 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
     int current_time = env->curr_timestep;
     bool replan_all_flag = decide_when_to_plan(current_time,RHCR_h);
     if (replan_all_flag){
-        cout<<"Time to replan all agents ! "<<endl;
+//        cout<<"Time to replan all agents ! "<<endl;
     }
     else{
-        cout<<"Not time to replan all agets ! "<<endl;
+     //   cout<<"Not time to replan all agets ! "<<endl;
     }
     actions = vector<Action>(env->curr_states.size(), Action::W);
-    cout<<"replan flag "<<replan_flag<<endl;
+   // cout<<"replan flag "<<replan_flag<<endl;
     std::vector<std::vector<std::vector<int>>> constraints(env->cols*env->rows, std::vector<std::vector<int>>(4));
     std::vector<std::vector<std::vector<int>>> stay_constraints(env->cols*env->rows, std::vector<std::vector<int>>(1));
 
@@ -807,26 +807,26 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                               env->goal_locations[current_agent].front().first, all_interval_nodes,
                                               &find_flag, current_agent,constraints,&related_agents,&curent_time_list,true,stay_constraints);
 
-                cout<<"Find flag is "<<find_flag<<endl;
-                std::ofstream outfile("log.txt",std::ofstream::app);
-                if (outfile.is_open()){
-                    outfile <<"findall flag "<<find_flag<<endl;
-                    outfile.close();
-                }
-                else{
-                    std::ofstream MyFile("log.txt");
+            //    cout<<"Find flag is "<<find_flag<<endl;
+                //std::ofstream outfile("log.txt",std::ofstream::app);
+                //if (outfile.is_open()){
+                //    outfile <<"findall flag "<<find_flag<<endl;
+                //    outfile.close();
+                //}
+                //else{
+                //    std::ofstream MyFile("log.txt");
                     // Write to the file
-                    MyFile <<"findall flag "<<find_flag<<endl;
+                //    MyFile <<"findall flag "<<find_flag<<endl;
                     // Close the file
-                    MyFile.close();
-                }
+                //    MyFile.close();
+                //}
                 if (find_flag== true) {
                     agents_time_list[current_agent]=curent_time_list;
                     agents_index[current_agent] = 1;
                     agents_path[current_agent] = path;
-                    cout << "begin to generate path!" << endl;
-                    cout<<current_agent<<endl;
-                    cout << "path length: " << agents_path[current_agent].size() << endl;
+              //      cout << "begin to generate path!" << endl;
+              //      cout<<current_agent<<endl;
+               //     cout << "path length: " << agents_path[current_agent].size() << endl;
                     already_planned_agents[current_agent]=1;
                     if (!find_flag) {
                         actions[current_agent] = Action::W;
@@ -835,7 +835,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                         actions[current_agent] = Action::FW; //forward action
                         if (agents_path[current_agent][1].first == env->goal_locations[current_agent].front().first) {
                             replan_flag = true;
-                            cout << "This robot will reach its goal at next time!" << endl;
+                         //   cout << "This robot will reach its goal at next time!" << endl;
                             agents_index[current_agent] = 0;
                         }
                     } else if (agents_path[current_agent][1].second != agents_path[current_agent][0].second) {
@@ -867,9 +867,9 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                         replan_time_lists=new vector<int>[related_agents.size()];
                         int solution_cost=0;
                         bool replan_find_flag= true;
-                        cout<<"debug"<<endl;
-                        cout<<related_agents.size()<<endl;
-                        cout<<replan_paths->size()<<endl;
+                       // cout<<"debug"<<endl;
+                       // cout<<related_agents.size()<<endl;
+                       // cout<<replan_paths->size()<<endl;
 
                         for (int n=0;n<related_agents.size();n++){
                             vector<int> new_related_agents;
@@ -888,35 +888,35 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 replan_find_flag=false;
                             }
                             replan_time_lists[n]=curent_time_list;
-                            std::ofstream outfile("log.txt",std::ofstream::app);
-                            if (outfile.is_open()){
-                                outfile <<"agent "<<related_agents[n]<<endl;
-                                outfile <<env->curr_timestep<<endl;
-                                outfile.close();
-                            }
-                            else{
-                                std::ofstream MyFile("log.txt");
+                            //std::ofstream outfile("log.txt",std::ofstream::app);
+                            //if (outfile.is_open()){
+                            //    outfile <<"agent "<<related_agents[n]<<endl;
+                            //    outfile <<env->curr_timestep<<endl;
+                            //    outfile.close();
+                            //}
+                            //else{
+                            //    std::ofstream MyFile("log.txt");
                                 // Write to the file
-                                MyFile <<"agent "<<related_agents[n]<<endl;
-                                MyFile<<env->curr_timestep<<endl;
+                            //    MyFile <<"agent "<<related_agents[n]<<endl;
+                            //    MyFile<<env->curr_timestep<<endl;
                                 // Close the file
-                                MyFile.close();
-                            }
+                            //    MyFile.close();
+                            //}
                             for (int z=0;z<curent_time_list.size();z++){
-                                std::ofstream outfile("log.txt",std::ofstream::app);
-                                if (outfile.is_open()){
-                                    outfile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
-                                    outfile <<curent_time_list[z]<<endl;
-                                    outfile.close();
-                                }
-                                else{
-                                    std::ofstream MyFile("log.txt");
+                                //std::ofstream outfile("log.txt",std::ofstream::app);
+                                //if (outfile.is_open()){
+                                //    outfile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
+                                //    outfile <<curent_time_list[z]<<endl;
+                                //    outfile.close();
+                                //}
+                                //else{
+                                 //   std::ofstream MyFile("log.txt");
                                     // Write to the file
-                                    MyFile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
-                                    MyFile <<curent_time_list[z]<<endl;
+                                 //   MyFile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
+                                 //   MyFile <<curent_time_list[z]<<endl;
                                     // Close the file
-                                    MyFile.close();
-                                }
+                                 //   MyFile.close();
+                                //}
                             }
                             solution_cost=solution_cost+replan_paths[n].size();
                         }
@@ -924,24 +924,18 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 
 
 
-                        cout<<"The number of conflicts is "<<conflicts.size()<<endl;
-                        std::ofstream outfile("log.txt",std::ofstream::app);
-                        if (outfile.is_open()){
-                            outfile <<"The number of conflicts is "<<conflicts.size()<<endl;
-                            outfile.close();
-                        }
-                        else {
-                            std::ofstream MyFile("log.txt");
+                      //  cout<<"The number of conflicts is "<<conflicts.size()<<endl;
+                        //std::ofstream outfile("log.txt",std::ofstream::app);
+                        //if (outfile.is_open()){
+                         //   outfile <<"The number of conflicts is "<<conflicts.size()<<endl;
+                         //   outfile.close();
+                        //}
+                        //else {
+                        //    std::ofstream MyFile("log.txt");
                             // Write to the file
-                            MyFile << "The number of conflicts is " << conflicts.size() << endl;
+                        //    MyFile << "The number of conflicts is " << conflicts.size() << endl;
                             // Close the file
-                            MyFile.close();
-                        }
-                       // if (replan_find_flag==true){
-                        //    for (int a=0;a<related_agents.size();a++){
-                        //        agents_time_list[related_agents[a]]=replan_time_lists[a];
-                        //        agents_path[related_agents[a]]=replan_paths[a];
-                        //    }
+                         //   MyFile.close();
                         //}
                         if  (conflicts.size()==0 and replan_find_flag== true){
                             agents_index[current_agent] = 1;
@@ -963,40 +957,40 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 
                             if (find_sol_flag== true){
                                 CBS_terminate_flag= true;
-                                std::ofstream outfile("log.txt",std::ofstream::app);
-                                if (outfile.is_open()){
-                                    outfile <<"The neighborhood agents: "<<endl;
-                                    for (int z=0;z<CBS_related_agents.size();z++){
-                                        outfile <<CBS_related_agents[z]<<endl;
-                                    }
-                                    for (int n=0;n<related_agents.size();n++){
-                                        cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
-                                        cout<<"path length "<< found_replan_paths[n].size()<<endl;
-                                        for (int m=0;m<<found_replan_time_lists[n].size();m++){
-                                            outfile<<"time "<<found_replan_time_lists[n][m]<<endl;
-                                            outfile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
-                                        }
-                                    }
-                                    outfile.close();
-                                }
-                                else{
-                                    std::ofstream MyFile("log.txt");
+                                //std::ofstream outfile("log.txt",std::ofstream::app);
+                                //if (outfile.is_open()){
+                                //    outfile <<"The neighborhood agents: "<<endl;
+                                //    for (int z=0;z<CBS_related_agents.size();z++){
+                                //        outfile <<CBS_related_agents[z]<<endl;
+                                //    }
+                                //    for (int n=0;n<related_agents.size();n++){
+                                //        cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
+                                //        cout<<"path length "<< found_replan_paths[n].size()<<endl;
+                                //        for (int m=0;m<<found_replan_time_lists[n].size();m++){
+                                //            outfile<<"time "<<found_replan_time_lists[n][m]<<endl;
+                                //            outfile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
+                                //        }
+                                //    }
+                                  // outfile.close();
+                                //}
+                                //else{
+                                //    std::ofstream MyFile("log.txt");
                                     // Write to the file
-                                    MyFile<<"The neighborhood agents: "<<endl;
-                                    for (int z=0;z<CBS_related_agents.size();z++){
-                                        MyFile <<CBS_related_agents[z]<<endl;
-                                    }
-                                    for (int n=0;n<related_agents.size();n++){
-                                        cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
-                                        cout<<"path length "<< found_replan_paths[n].size()<<endl;
-                                        for (int m=0;m<found_replan_time_lists[n].size();m++){
-                                            MyFile<<"time "<<found_replan_time_lists[n][m]<<endl;
-                                            MyFile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
-                                        }
-                                    }
+                                //    MyFile<<"The neighborhood agents: "<<endl;
+                                //    for (int z=0;z<CBS_related_agents.size();z++){
+                                //        MyFile <<CBS_related_agents[z]<<endl;
+                                //    }
+                                //    for (int n=0;n<related_agents.size();n++){
+                                //        cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
+                                //        cout<<"path length "<< found_replan_paths[n].size()<<endl;
+                                //        for (int m=0;m<found_replan_time_lists[n].size();m++){
+                                 //           MyFile<<"time "<<found_replan_time_lists[n][m]<<endl;
+                                 //           MyFile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
+                                 //       }
+                                 //   }
                                     // Close the file
-                                    MyFile.close();
-                                }
+                                 //   MyFile.close();
+                                //}
                                 find_flag=true;
                                 CBS_success_flag= true;
                                 for (int n=0;n<related_agents.size();n++){
@@ -1011,27 +1005,27 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 related_agents=CBS_related_agents;
                                 //insert_safe_intervals_from_path(related_agents,agents_path,agents_time_list);
 
-                                std::ofstream outfile("log.txt",std::ofstream::app);
-                                if (outfile.is_open()){
-                                    outfile <<"cannot find path! Use larger neighborhood to plan!"<<endl;
-                                    outfile.close();
-                                }
-                                else{
-                                    std::ofstream MyFile("log.txt");
+                                //std::ofstream outfile("log.txt",std::ofstream::app);
+                                //if (outfile.is_open()){
+                                //    outfile <<"cannot find path! Use larger neighborhood to plan!"<<endl;
+                                //    outfile.close();
+                                //}
+                                //else{
+                                //    std::ofstream MyFile("log.txt");
                                     // Write to the file
-                                    outfile <<"cannot find path! Use larger neighborhood to plan!"<<endl;
+                                //    outfile <<"cannot find path! Use larger neighborhood to plan!"<<endl;
                                     // Close the file
-                                    MyFile.close();
-                                }
+                                //    MyFile.close();
+                                //}
 
                                 agents_index[current_agent] = 0;
                             }
                         }
                         }
                     if (CBS_success_flag== false){
-                        cout << "begin to generate path!" << endl;
-                        cout<<current_agent<<endl;
-                        cout << "path length: " << agents_path[current_agent].size() << endl;
+                      //  cout << "begin to generate path!" << endl;
+                      //  cout<<current_agent<<endl;
+                      //  cout << "path length: " << agents_path[current_agent].size() << endl;
                         if (!find_flag) {
                             actions[current_agent] = Action::W;
                             continue;
@@ -1141,12 +1135,12 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
             int current_agent = index[i];
             int current_timestep = agents_index[current_agent];
 
-            cout<<"current agent: "<<current_agent<<endl;
-            cout<<"step: "<<current_timestep<<endl;
-            cout<<"position on the planned path: "<<agents_path[current_agent][current_timestep].first<<endl;
-            cout<<"actual position on the map: "<<env->curr_states[current_agent].location<<endl;
-            cout<<"direction on the planned path: "<<agents_path[current_agent][current_timestep].second<<endl;
-            cout<<"actual direction on the map: "<<env->curr_states[current_agent].orientation<<endl;
+         //   cout<<"current agent: "<<current_agent<<endl;
+         //   cout<<"step: "<<current_timestep<<endl;
+         //   cout<<"position on the planned path: "<<agents_path[current_agent][current_timestep].first<<endl;
+          //  cout<<"actual position on the map: "<<env->curr_states[current_agent].location<<endl;
+          //  cout<<"direction on the planned path: "<<agents_path[current_agent][current_timestep].second<<endl;
+          //  cout<<"actual direction on the map: "<<env->curr_states[current_agent].orientation<<endl;
             if (current_timestep>=agents_path[current_agent].size()-1 or current_timestep==0){
                 actions[current_agent] = Action::W;
                 continue;
@@ -1155,7 +1149,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                 actions[current_agent] = Action::FW; //forward action
                 if (agents_path[current_agent][current_timestep+1].first == env->goal_locations[current_agent].front().first) {
                     replan_flag = true;
-                    cout<<"This robot will reach its goal at next time!"<<endl;
+              //      cout<<"This robot will reach its goal at next time!"<<endl;
                     agents_index[current_agent] = -1;
                     continue;
                 }
@@ -1178,24 +1172,24 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                 continue;
             }
             if (agents_index[current_agent]==0) {
-                cout<<"insert intervals"<<endl;
+            //    cout<<"insert intervals"<<endl;
                 for (int p=0;p<all_interval_nodes[env->curr_states[current_agent].location].size();p++){
-                    cout<<all_interval_nodes[env->curr_states[current_agent].location][p].start_timestep<<","<<all_interval_nodes[env->curr_states[current_agent].location][p].end_timestep<<endl;
+              //      cout<<all_interval_nodes[env->curr_states[current_agent].location][p].start_timestep<<","<<all_interval_nodes[env->curr_states[current_agent].location][p].end_timestep<<endl;
 
                 }
                 for (int p=0;p<all_interval_nodes[env->curr_states[current_agent].location].size();p++){
-                    cout<<all_interval_nodes[env->curr_states[current_agent].location][p].from_where<<endl;
+             //       cout<<all_interval_nodes[env->curr_states[current_agent].location][p].from_where<<endl;
 
                 }
                 insert_safe_intervals(env->curr_states[current_agent].location, env->curr_timestep);
-                cout<<"replanning!"<<endl;
+           //     cout<<"replanning!"<<endl;
 
                 int current_position=env->curr_states[current_agent].location;
                 int goal_location=env->goal_locations[current_agent].front().first;
                 int current_map_h=-1;
                 int current_map_w=-1;
-                cout<<current_agent<<endl;
-                cout<<"Begin the replanning of an agent"<<endl;
+          //      cout<<current_agent<<endl;
+           //     cout<<"Begin the replanning of an agent"<<endl;
                 //cout<<env->curr_states[current_agent].location<<endl;
                 //cout<<env->curr_states[current_agent].orientation<<endl;
                 vec_index_to_map_index(current_map_h,current_map_w,current_position);
@@ -1210,12 +1204,12 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                 else
                 {
 
-                    cout<<"The agent number "<<current_agent<<endl;
+              //      cout<<"The agent number "<<current_agent<<endl;
                     //cout<<"Begin to use A star"<<endl;
                     //path = single_agent_plan(env->curr_states[current_agent].location,
                     //env->curr_states[current_agent].orientation,
                     //env->goal_locations[current_agent].front().first);
-                    cout<<"Begin to use SIPP"<<endl;
+                 //   cout<<"Begin to use SIPP"<<endl;
                     bool find_flag = false;
                     vector<int> related_agents;
                     vector <int> curent_time_list;
@@ -1223,26 +1217,26 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                                 env->curr_states[current_agent].orientation,
                                                 env->goal_locations[current_agent].front().first,all_interval_nodes,&find_flag, current_agent,constraints,&related_agents,&curent_time_list,
                                                                    true,stay_constraints);
-                    cout<<"Find flag is "<<find_flag<<endl;
-                    std::ofstream outfile("log.txt",std::ofstream::app);
-                    if (outfile.is_open()){
-                        outfile <<"Replanfind flag "<<find_flag<<endl;
-                        outfile.close();
-                    }
-                    else{
-                        std::ofstream MyFile("log.txt");
+                //    cout<<"Find flag is "<<find_flag<<endl;
+                    //std::ofstream outfile("log.txt",std::ofstream::app);
+                    //if (outfile.is_open()){
+                     //   outfile <<"Replanfind flag "<<find_flag<<endl;
+                     //   outfile.close();
+                    //}
+                    //else{
+                    //    std::ofstream MyFile("log.txt");
                         // Write to the file
-                        MyFile <<"Replanfind flag "<<find_flag<<endl;
+                     //   MyFile <<"Replanfind flag "<<find_flag<<endl;
                         // Close the file
-                        MyFile.close();
-                    }
+                     //   MyFile.close();
+                  //  }
                     if (find_flag==true) {
                         already_planned_agents[current_agent]=1;
                         agents_path[current_agent] = path;
                         agents_time_list[current_agent]=curent_time_list;
                         agents_index[current_agent] = 1;
-                        cout<<"begin to generate path!"<<endl;
-                        cout<<agents_path[current_agent].size()<<endl;
+              //          cout<<"begin to generate path!"<<endl;
+               //         cout<<agents_path[current_agent].size()<<endl;
                         if (!find_flag) {
                             actions[current_agent] = Action::W;
                             continue;
@@ -1252,7 +1246,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 
                             if (agents_path[current_agent][1].first == env->goal_locations[current_agent].front().first) {
                                 replan_flag = true;
-                                cout<<"This robot will reach its goal at next time!"<<endl;
+                  //              cout<<"This robot will reach its goal at next time!"<<endl;
                                 agents_index[current_agent] = 0;
                             }
 
@@ -1288,8 +1282,8 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                             replan_time_lists=new vector<int>[related_agents.size()];
                             int solution_cost=0;
                             bool replan_find_flag= true;
-                            cout<<"debug"<<endl;
-                            cout<<related_agents.size()<<endl;
+                      //      cout<<"debug"<<endl;
+                       //     cout<<related_agents.size()<<endl;
                             for (int n=0;n<related_agents.size();n++){
                                 vector<int> new_related_agents;
                                 vector <int> curent_time_list;
@@ -1304,37 +1298,37 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 if (current_find_flag== false){
                                     replan_find_flag=false;
                                 }
-                                std::ofstream outfile("log.txt",std::ofstream::app);
-                                if (outfile.is_open()){
-                                    outfile <<"agent "<<related_agents[n]<<endl;
-                                    outfile <<env->curr_timestep<<endl;
-                                    outfile <<"replan flag "<<current_find_flag<<endl;
-                                    outfile.close();
-                                }
-                                else{
-                                    std::ofstream MyFile("log.txt");
+                                //std::ofstream outfile("log.txt",std::ofstream::app);
+                                //if (outfile.is_open()){
+                                //    outfile <<"agent "<<related_agents[n]<<endl;
+                                //    outfile <<env->curr_timestep<<endl;
+                                //    outfile <<"replan flag "<<current_find_flag<<endl;
+                                //    outfile.close();
+                                //}
+                                //else{
+                                //    std::ofstream MyFile("log.txt");
                                     // Write to the file
-                                    MyFile <<"agent "<<related_agents[n]<<endl;
-                                    MyFile<< env->curr_timestep<<endl;
-                                    MyFile<<"replan flag "<<current_find_flag<<endl;
+                                //    MyFile <<"agent "<<related_agents[n]<<endl;
+                                 //   MyFile<< env->curr_timestep<<endl;
+                                 //   MyFile<<"replan flag "<<current_find_flag<<endl;
                                     // Close the file
-                                    MyFile.close();
-                                }
+                                 //   MyFile.close();
+                               // }
                                 for (int z=0;z<curent_time_list.size();z++){
-                                    std::ofstream outfile("log.txt",std::ofstream::app);
-                                    if (outfile.is_open()){
-                                        outfile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
-                                        outfile <<curent_time_list[z]<<endl;
-                                        outfile.close();
-                                    }
-                                    else{
-                                        std::ofstream MyFile("log.txt");
+                                   // std::ofstream outfile("log.txt",std::ofstream::app);
+                                    //if (outfile.is_open()){
+                                    //    outfile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
+                                    //    outfile <<curent_time_list[z]<<endl;
+                                    //    outfile.close();
+                                   // }
+                                   // else{
+                                   //     std::ofstream MyFile("log.txt");
                                         // Write to the file
-                                        MyFile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
-                                        MyFile<<curent_time_list[z]<<endl;
+                                    //    MyFile <<replan_paths[n][z].first<<" ," <<replan_paths[n][z].second<<endl;
+                                    //    MyFile<<curent_time_list[z]<<endl;
                                         // Close the file
-                                        MyFile.close();
-                                    }
+                                    //    MyFile.close();
+                                   // }
                                 }
                                 replan_time_lists[n]=curent_time_list;
                                 solution_cost=solution_cost+replan_paths[n].size();
@@ -1347,19 +1341,19 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                             //}
                             vector<conflict> conflicts=detect_conflict(related_agents, replan_paths, env->curr_timestep);
 
-                            cout<<"The number of conflicts is "<<conflicts.size()<<endl;
-                            std::ofstream outfile("log.txt",std::ofstream::app);
-                            if (outfile.is_open()){
-                                outfile <<"The number of conflicts is "<<conflicts.size()<<endl;
-                                outfile.close();
-                            }
-                            else{
-                                std::ofstream MyFile("log.txt");
+                       //     cout<<"The number of conflicts is "<<conflicts.size()<<endl;
+                            //std::ofstream outfile("log.txt",std::ofstream::app);
+                            //if (outfile.is_open()){
+                             //   outfile <<"The number of conflicts is "<<conflicts.size()<<endl;
+                             //   outfile.close();
+                            //}
+                            //else{
+                              //  std::ofstream MyFile("log.txt");
                                 // Write to the file
-                                MyFile<<"The number of conflicts is "<<conflicts.size()<<endl;
+                              //  MyFile<<"The number of conflicts is "<<conflicts.size()<<endl;
                                 // Close the file
-                                MyFile.close();
-                            }
+                              //  MyFile.close();
+                           // }
                             if  (conflicts.size()==0 and replan_find_flag== true){
                                 CBS_replan_flag=true;
                                 CBS_terminate_flag=true;
@@ -1403,40 +1397,40 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 vector<int> CBS_related_agents;
                                 CBS(conflicts,replan_paths,related_agents,agents_time_list,&find_sol_flag,found_replan_paths,found_replan_time_lists,&CBS_related_agents);
                                 if (find_sol_flag== true){
-                                    std::ofstream outfile("log.txt",std::ofstream::app);
-                                    if (outfile.is_open()){
-                                        outfile <<"The neighborhood agents: "<<endl;
-                                        for (int z=0;z<CBS_related_agents.size();z++){
-                                            outfile <<CBS_related_agents[z]<<endl;
-                                        }
-                                        for (int n=0;n<related_agents.size();n++){
-                                            cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
-                                            cout<<"path length "<< found_replan_paths[n].size()<<endl;
-                                            for (int m=0;m<replan_time_lists[n].size();m++){
-                                                outfile<<"time "<<found_replan_time_lists[n][m]<<endl;
-                                                outfile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
-                                            }
-                                        }
-                                        outfile.close();
-                                    }
-                                    else{
-                                        std::ofstream MyFile("log.txt");
+                                    //std::ofstream outfile("log.txt",std::ofstream::app);
+                                    //if (outfile.is_open()){
+                                    //    outfile <<"The neighborhood agents: "<<endl;
+                                    //    for (int z=0;z<CBS_related_agents.size();z++){
+                                     //       outfile <<CBS_related_agents[z]<<endl;
+                                    //    }
+                                     //   for (int n=0;n<related_agents.size();n++){
+                                     //       cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
+                                     //       cout<<"path length "<< found_replan_paths[n].size()<<endl;
+                                      //      for (int m=0;m<replan_time_lists[n].size();m++){
+                                       //         outfile<<"time "<<found_replan_time_lists[n][m]<<endl;
+                                       //         outfile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
+                                      //      }
+                                  //      }
+                                   //     outfile.close();
+                              //      }
+                                //    else{
+                                    //    std::ofstream MyFile("log.txt");
                                         // Write to the file
-                                        MyFile<<"The neighborhood agents: "<<endl;
-                                        for (int z=0;z<CBS_related_agents.size();z++){
-                                            MyFile <<CBS_related_agents[z]<<endl;
-                                        }
-                                        for (int n=0;n<related_agents.size();n++){
-                                            cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
-                                            cout<<"path length "<< found_replan_paths[n].size()<<endl;
-                                            for (int m=0;m<replan_time_lists[n].size();m++){
-                                                MyFile<<"time "<<found_replan_time_lists[n][m]<<endl;
-                                                MyFile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
-                                            }
-                                        }
+                                     //   MyFile<<"The neighborhood agents: "<<endl;
+                                     //   for (int z=0;z<CBS_related_agents.size();z++){
+                                     //       MyFile <<CBS_related_agents[z]<<endl;
+                                    //    }
+                                     //   for (int n=0;n<related_agents.size();n++){
+                                    //        cout<<"time length  "<<found_replan_time_lists[n].size()<<endl;
+                                    //        cout<<"path length "<< found_replan_paths[n].size()<<endl;
+                                   //         for (int m=0;m<replan_time_lists[n].size();m++){
+                                     //           MyFile<<"time "<<found_replan_time_lists[n][m]<<endl;
+                                     //           MyFile<<"location "<<found_replan_paths[n][m].first<<" "<<found_replan_paths[n][m].second<<endl;
+                                     //       }
+                               //         }
                                         // Close the file
-                                        MyFile.close();
-                                    }
+                                      //  MyFile.close();
+                                 //   }
                                     CBS_terminate_flag=true;
                                     find_flag=true;
                                     CBS_replan_flag= true;
@@ -1449,25 +1443,25 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                                 }
                                 else{
                                     related_agents=CBS_related_agents;
-                                    std::ofstream outfile("log.txt",std::ofstream::app);
-                                    if (outfile.is_open()){
-                                        outfile <<"cannot find path! Use a larger neighborhood to replan"<<endl;
-                                        outfile.close();
-                                    }
-                                    else{
-                                        std::ofstream MyFile("log.txt");
+                                    //std::ofstream outfile("log.txt",std::ofstream::app);
+                                   // if (outfile.is_open()){
+                                   //     outfile <<"cannot find path! Use a larger neighborhood to replan"<<endl;
+                                    //    outfile.close();
+                                   // }
+                                   // else{
+                                    //    std::ofstream MyFile("log.txt");
                                         // Write to the file
-                                        outfile <<"cannot find path! Use a larger neighborhood to replan"<<endl;
+                                    //    outfile <<"cannot find path! Use a larger neighborhood to replan"<<endl;
                                         // Close the file
-                                        MyFile.close();
-                                    }
+                                     //   MyFile.close();
+                                   // }
                                     agents_index[current_agent] = 0;
                                 }
                             }
                         }
                         if (CBS_replan_flag== false){
-                            cout<<"begin to generate path!"<<endl;
-                            cout<<agents_path[current_agent].size()<<endl;
+                     //       cout<<"begin to generate path!"<<endl;
+                    //        cout<<agents_path[current_agent].size()<<endl;
                             if (!find_flag) {
                                 actions[current_agent] = Action::W;
                                 continue;
@@ -1477,7 +1471,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 
                                 if (agents_path[current_agent][1].first == env->goal_locations[current_agent].front().first) {
                                     replan_flag = true;
-                                    cout<<"This robot will reach its goal at next time!"<<endl;
+                         //           cout<<"This robot will reach its goal at next time!"<<endl;
                                     agents_index[current_agent] = 0;
                                 }
 
@@ -1505,11 +1499,11 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                         else{
                             for (int r=0;r<related_agents.size();r++){
 
-                                cout<<"begin to generate path!"<<endl;
-                                cout<<r<<endl;
+                      //          cout<<"begin to generate path!"<<endl;
+                       //         cout<<r<<endl;
                                 current_agent=related_agents[r];
                                 already_planned_agents[current_agent]=1;
-                                cout<<agents_path[current_agent].size()<<endl;
+                     //           cout<<agents_path[current_agent].size()<<endl;
                                 if (!find_flag) {
                                     actions[current_agent] = Action::W;
                                     continue;
@@ -1519,7 +1513,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
 
                                     if (agents_path[current_agent][1].first == env->goal_locations[current_agent].front().first) {
                                         replan_flag = true;
-                                        cout<<"This robot will reach its goal at next time!"<<endl;
+                        //                cout<<"This robot will reach its goal at next time!"<<endl;
                                         agents_index[current_agent] = 0;
                                     }
 
@@ -1588,12 +1582,12 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
             int current_agent=index[i];
             int current_timestep = agents_index[current_agent];
 
-            cout<<"current agent: "<<current_agent<<endl;
-            cout<<"step: "<<current_timestep<<endl;
-            cout<<"position on the planned path: "<<agents_path[current_agent][current_timestep].first<<endl;
-            cout<<"actual position on the map: "<<env->curr_states[current_agent].location<<endl;
-            cout<<"direction on the planned path: "<<agents_path[current_agent][current_timestep].second<<endl;
-            cout<<"actual direction on the map: "<<env->curr_states[current_agent].orientation<<endl;
+         //   cout<<"current agent: "<<current_agent<<endl;
+         //   cout<<"step: "<<current_timestep<<endl;
+         //   cout<<"position on the planned path: "<<agents_path[current_agent][current_timestep].first<<endl;
+        //    cout<<"actual position on the map: "<<env->curr_states[current_agent].location<<endl;
+        //    cout<<"direction on the planned path: "<<agents_path[current_agent][current_timestep].second<<endl;
+        //    cout<<"actual direction on the map: "<<env->curr_states[current_agent].orientation<<endl;
             if (current_timestep>=agents_path[current_agent].size()-1 or current_timestep==0){
                 actions[current_agent]=Action::W;
                 continue;
@@ -1602,7 +1596,7 @@ void MAPFPlanner::plan(int time_limit, vector<Action> & actions)
                 actions[current_agent] = Action::FW; //forward action
                 if (agents_path[current_agent][current_timestep+1].first==env->goal_locations[current_agent].front().first){
                     replan_flag= true;
-                    cout<<"This robot will reach its goal at next time!"<<endl;
+            //        cout<<"This robot will reach its goal at next time!"<<endl;
                     agents_index[current_agent]=0;
                     continue;
                 }
@@ -1651,55 +1645,55 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
     vector<node_interval> current_interval=all_interval_nodes[start];
     int rtn_index;
     *find_flag=false;
-    cout<<"planning agent "<<agent_id<<endl;
+  //  cout<<"planning agent "<<agent_id<<endl;
     //for (int r = 0; r<current_interval.size(); r++) {
         //cout<<"(non)safe interval at the start location: "<<current_interval[r].start_timestep<<","<<current_interval[r].end_timestep<<endl;
         //cout<<"starting time: "<< start_time<<endl;
     //}
     node_interval current_safe_interval = compute_current_interval(current_interval,start_time, &rtn_index);
     if (current_safe_interval.is_safe== false){
-        std::ofstream outfile("log.txt",std::ofstream::app);
-        if (outfile.is_open()){
-            outfile <<"something wrong"<<endl;
-            outfile <<current_safe_interval.start_timestep<<","<<current_safe_interval.end_timestep<<endl;
-            outfile<<current_safe_interval.id<<endl;
-            outfile.close();
-        }
-        else{
-            std::ofstream MyFile("log.txt");
+        //std::ofstream outfile("log.txt",std::ofstream::app);
+       // if (outfile.is_open()){
+         //   outfile <<"something wrong"<<endl;
+          //  outfile <<current_safe_interval.start_timestep<<","<<current_safe_interval.end_timestep<<endl;
+         //   outfile<<current_safe_interval.id<<endl;
+         //   outfile.close();
+        //}
+        //else{
+        //    std::ofstream MyFile("log.txt");
             // Write to the file
-            MyFile <<"something wrong"<<endl;
-            MyFile<<current_safe_interval.start_timestep<<","<<current_safe_interval.end_timestep<<endl;
-            MyFile<<current_safe_interval.id<<endl;
+        //    MyFile <<"something wrong"<<endl;
+        //    MyFile<<current_safe_interval.start_timestep<<","<<current_safe_interval.end_timestep<<endl;
+         //   MyFile<<current_safe_interval.id<<endl;
             // Close the file
-            MyFile.close();
-        }
+         //   MyFile.close();
+      //  }
     }
-    cout<<current_interval[rtn_index].is_safe<<endl;
+   // cout<<current_interval[rtn_index].is_safe<<endl;
     int next_agent_id=-1;
     int last_move_pos=-1;
     if (rtn_index+1<current_interval.size()){
-        std::ofstream outfile("log.txt",std::ofstream::app);
+       // std::ofstream outfile("log.txt",std::ofstream::app);
         if (current_interval[rtn_index+1].is_safe== false){
             next_agent_id=current_interval[rtn_index+1].id;
             last_move_pos=current_interval[rtn_index+1].from_where;
         }
-        if (outfile.is_open()){
-            outfile <<current_interval[rtn_index+1].id<<endl;
-            outfile <<"current agent "<<agent_id<<endl;
-            outfile <<current_interval[rtn_index+1].is_safe<<endl;
-            outfile <<current_interval[rtn_index+1].start_timestep<<" , "<<current_interval[rtn_index+1].end_timestep<<endl;
-            outfile.close();
-        }
+       // if (outfile.is_open()){
+       //     outfile <<current_interval[rtn_index+1].id<<endl;
+       //     outfile <<"current agent "<<agent_id<<endl;
+       //     outfile <<current_interval[rtn_index+1].is_safe<<endl;
+       //     outfile <<current_interval[rtn_index+1].start_timestep<<" , "<<current_interval[rtn_index+1].end_timestep<<endl;
+       //     outfile.close();
+      //  }
         else{
-            std::ofstream MyFile("log.txt");
+            //std::ofstream MyFile("log.txt");
             // Write to the file
-            MyFile <<current_interval[rtn_index+1].id<<endl;
-            MyFile<<"current agent "<<agent_id<<endl;
-            MyFile <<current_interval[rtn_index+1].is_safe<<endl;
-            MyFile<<current_interval[rtn_index+1].start_timestep<<" , "<<current_interval[rtn_index+1].end_timestep<<endl;
+            //MyFile <<current_interval[rtn_index+1].id<<endl;
+           // MyFile<<"current agent "<<agent_id<<endl;
+            //MyFile <<current_interval[rtn_index+1].is_safe<<endl;
+           // MyFile<<current_interval[rtn_index+1].start_timestep<<" , "<<current_interval[rtn_index+1].end_timestep<<endl;
             // Close the file
-            MyFile.close();
+           // MyFile.close();
         }
     }
     else{
@@ -1717,24 +1711,24 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
         //    MyFile.close();
         //}
     }
-    std::ofstream outfile("log.txt",std::ofstream::app);
-    if (outfile.is_open()){
-        outfile <<"current agent "<<agent_id<<endl;
-        outfile<<current_interval[rtn_index].is_safe<<endl;
-        outfile<<current_interval[rtn_index].start_timestep<<","<<current_interval[rtn_index].end_timestep<<endl;
-        outfile<<current_interval[rtn_index].id<<endl;
-        outfile.close();
-    }
-    else{
-        std::ofstream MyFile("log.txt");
+   // std::ofstream outfile("log.txt",std::ofstream::app);
+   // if (outfile.is_open()){
+    //    outfile <<"current agent "<<agent_id<<endl;
+   //     outfile<<current_interval[rtn_index].is_safe<<endl;
+   //     outfile<<current_interval[rtn_index].start_timestep<<","<<current_interval[rtn_index].end_timestep<<endl;
+    //    outfile<<current_interval[rtn_index].id<<endl;
+    //    outfile.close();
+  //  }
+ //   else{
+  //      std::ofstream MyFile("log.txt");
         // Write to the file
-        MyFile<<"current agent "<<agent_id<<endl;
-        MyFile<<current_interval[rtn_index].is_safe<<endl;
-        MyFile<<current_interval[rtn_index].start_timestep<<","<<current_interval[rtn_index].end_timestep<<endl;
-        MyFile<<current_interval[rtn_index].id<<endl;
+   //     MyFile<<"current agent "<<agent_id<<endl;
+   //     MyFile<<current_interval[rtn_index].is_safe<<endl;
+    //    MyFile<<current_interval[rtn_index].start_timestep<<","<<current_interval[rtn_index].end_timestep<<endl;
+   //     MyFile<<current_interval[rtn_index].id<<endl;
         // Close the file
-        MyFile.close();
-    }
+    //    MyFile.close();
+    //}
     for (int i=rtn_index+1;i<current_interval.size();i++){
         if (current_interval[i].is_safe== true){
             break;
@@ -1770,7 +1764,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
     all_nodes_set.insert(maximum_timestep*maximum_timestep*0+maximum_timestep*0+4*start+start_direct);
     int insert_key = 0;
     bool terminate_flag = false;
-    cout<<"Planning new agent"<<endl;
+ //   cout<<"Planning new agent"<<endl;
     SIPPNode* current_node;
     while (open_list.size()>0) {
         if (terminate_flag== true) {
@@ -1802,7 +1796,7 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
         if (curr->location == end) {
             int current_arr_time=curr->arrive_time;
 
-            cout<<"find solution!"<<endl;
+      //      cout<<"find solution!"<<endl;
             *find_flag = true;
             terminate_flag = true;
 
@@ -1896,16 +1890,16 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
             }
             agent_interpolate_path.emplace_back(current_path_SIPP_node[current_path_SIPP_node.size()-1].location,current_path_SIPP_node[current_path_SIPP_node.size()-1].arrive_dir);
             current_time_list->push_back(env->curr_timestep+agent_interpolate_path.size()-1);
-            for (int z=0;z<agent_interpolate_path.size();z++) {
-                cout<<"location: "<<agent_interpolate_path[z].first<<endl;
-                cout<<"direction: "<<agent_interpolate_path[z].second<<endl;
-            }
+           // for (int z=0;z<agent_interpolate_path.size();z++) {
+            //    cout<<"location: "<<agent_interpolate_path[z].first<<endl;
+             //   cout<<"direction: "<<agent_interpolate_path[z].second<<endl;
+            //}
 
-            cout<<"update intervals!"<<endl;
+            //cout<<"update intervals!"<<endl;
             if (update_flag== true){
                 SIPP_update_safe_intervals(agent_interpolate_path, agent_id);
             }
-            cout<<"finish updating intervals!"<<endl;
+           // cout<<"finish updating intervals!"<<endl;
             current_node = curr;
             break;
         }
@@ -2156,18 +2150,18 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
                     //cout<<candidate_valid_intervals[e].first<<","<<candidate_valid_intervals[e].second<<endl;
                     pair<int,int> current_candidate_interval=candidate_valid_intervals[e];
                     if (current_candidate_interval.second-current_candidate_interval.first<=1){
-                        std::ofstream outfile("log.txt",std::ofstream::app);
-                        if (outfile.is_open()){
-                            outfile <<"Valid intervals "<<current_candidate_interval.first<<","<<current_candidate_interval.second<<endl;
-                            outfile.close();
-                        }
-                        else{
-                            std::ofstream MyFile("log.txt");
+                       // std::ofstream outfile("log.txt",std::ofstream::app);
+                       // if (outfile.is_open()){
+                       //     outfile <<"Valid intervals "<<current_candidate_interval.first<<","<<current_candidate_interval.second<<endl;
+                      //      outfile.close();
+                     //   }
+                     //   else{
+                      //      std::ofstream MyFile("log.txt");
                             // Write to the file
-                            MyFile <<"Valid intervals "<<current_candidate_interval.first<<","<<current_candidate_interval.second<<endl;
+                     //       MyFile <<"Valid intervals "<<current_candidate_interval.first<<","<<current_candidate_interval.second<<endl;
                             //  Close the file
-                            MyFile.close();
-                        }
+                     //       MyFile.close();
+                     //   }
                     }
 
                     if (minimum_leave_time+1>current_candidate_interval.second or current_maximum_leave_time+1<current_candidate_interval.first){
@@ -2269,9 +2263,9 @@ vector<pair<int,int>> MAPFPlanner::single_agent_plan_SIPP_with_constraints(int s
     }
     removeDuplicates(current_related_agents);
     *related_agents=current_related_agents;
-    for (int i=0;i<current_related_agents.size();i++){
-        cout<<"one related agent is "<<current_related_agents[i]<<endl;
-    }
+    //for (int i=0;i<current_related_agents.size();i++){
+     //   cout<<"one related agent is "<<current_related_agents[i]<<endl;
+    //}
     return agent_interpolate_path;
 }
 
@@ -2296,23 +2290,23 @@ void MAPFPlanner::insert_safe_intervals_from_path(vector<int>agents_id,vector<pa
             }
         }
         if (start_time==-1){
-            std::ofstream outfile("log.txt",std::ofstream::app);
-            if (outfile.is_open()){
-                outfile <<"something wrong in the timelist"<<endl;
-                outfile.close();
-            }
-            else{
-                std::ofstream MyFile("log.txt");
+            //std::ofstream outfile("log.txt",std::ofstream::app);
+           // if (outfile.is_open()){
+            //    outfile <<"something wrong in the timelist"<<endl;
+           //     outfile.close();
+           // }
+           // else{
+           //     std::ofstream MyFile("log.txt");
                 // Write to the file
-                MyFile <<"something wrong in the timelist"<<endl;
+           //     MyFile <<"something wrong in the timelist"<<endl;
                 // Close the file
-                MyFile.close();
-            }
+            //    MyFile.close();
+           // }
             continue;
         }
 
         for (int j=start_time;j<current_agent_path.size();j++){
-            cout<<current_agent_path[j].first<<","<<current_time_list[j]<<endl;
+        //    cout<<current_agent_path[j].first<<","<<current_time_list[j]<<endl;
             insert_safe_intervals(current_agent_path[j].first,current_time_list[j]);
         }
     }
@@ -2333,7 +2327,7 @@ void MAPFPlanner::insert_safe_intervals_from_one_path(int agents_id,vector<pair<
     }
 
     for (int j=start_time;j<current_agent_path.size();j++){
-        cout<<current_agent_path[j].first<<","<<current_time_list[j]<<endl;
+       // cout<<current_agent_path[j].first<<","<<current_time_list[j]<<endl;
         insert_safe_intervals(current_agent_path[j].first,current_time_list[j]);
     }
 }
@@ -2405,7 +2399,7 @@ void MAPFPlanner::SIPP_update_safe_intervals(vector<pair<int, int>> agent_planne
 
         compute_current_interval(all_interval_nodes[location],current_time_step,&rtn_index);
         if (all_interval_nodes[location][rtn_index].is_safe== false){
-            cout<<"something wrong takes place!"<<endl;
+          //  cout<<"something wrong takes place!"<<endl;
         }
         else if (current_time_step==all_interval_nodes[location][rtn_index].start_timestep) {
             all_interval_nodes[location][rtn_index].start_timestep = all_interval_nodes[location][rtn_index].start_timestep + 1;
